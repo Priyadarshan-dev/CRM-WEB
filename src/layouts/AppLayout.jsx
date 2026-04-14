@@ -1,5 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/Sidebar';
+import NotificationBell from '../components/NotificationBell';
 
 const AppLayout = ({ children }) => {
   return (
@@ -11,6 +12,7 @@ const AppLayout = ({ children }) => {
             Portal / {window.location.pathname.substring(1) || 'Home'}
           </h2>
           <div className="flex items-center gap-4">
+            <NotificationBell />
             <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
               v1.0.0-beta
             </span>

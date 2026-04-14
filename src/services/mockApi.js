@@ -1,4 +1,5 @@
 // src/services/mockApi.js
+import { pushNotification } from '../context/NotificationContext';
 
 const INITIAL_USERS = [
   { id: 1, name: 'Super Admin', role: 'Admin', email: 'admin@crm.com', password: 'password123' },
@@ -10,11 +11,11 @@ const INITIAL_USERS = [
 ];
 
 const MOCK_LEADS = [
-  { id: 1, name: 'Alice Johnson', email: 'alice@example.com', status: 'New', source: 'Facebook', assignedTo: 'Unassigned', date: 'Oct 24, 2023', executiveId: null },
-  { id: 2, name: 'Bob Smith', email: 'bob@example.com', status: 'Contacted', source: 'Website', assignedTo: 'John Sales-Exec', date: 'Oct 23, 2023', executiveId: 4 },
-  { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', status: 'Qualified', source: 'Referral', assignedTo: 'David Sales-Exec', date: 'Oct 22, 2023', executiveId: 6 },
-  { id: 4, name: 'Emily Rodgers', email: 'emily@example.com', status: 'New', source: 'Facebook Lead', assignedTo: 'Emma Sales-Exec', date: 'Oct 25, 2023', executiveId: 5 },
-  { id: 5, name: 'Marcus Chen', email: 'marcus@example.com', status: 'Pending', source: 'Website Inquiry', assignedTo: 'John Sales-Exec', date: 'Oct 25, 2023', executiveId: 4 },
+  { id: 1, name: 'Alice Johnson', email: 'alice@example.com', phone: '+1 (555) 123-4567', status: 'New', source: 'Facebook', assignedTo: 'Unassigned', date: 'Oct 24, 2023', executiveId: null },
+  { id: 2, name: 'Bob Smith', email: 'bob@example.com', phone: '+1 (555) 987-6543', status: 'Contacted', source: 'Website', assignedTo: 'John Sales-Exec', date: 'Oct 23, 2023', executiveId: 4 },
+  { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', phone: '+1 (555) 456-7890', status: 'Qualified', source: 'Referral', assignedTo: 'David Sales-Exec', date: 'Oct 22, 2023', executiveId: 6 },
+  { id: 4, name: 'Emily Rodgers', email: 'emily@example.com', phone: '+1 (555) 321-0987', status: 'New', source: 'Facebook Lead', assignedTo: 'Emma Sales-Exec', date: 'Oct 25, 2023', executiveId: 5 },
+  { id: 5, name: 'Marcus Chen', email: 'marcus@example.com', phone: '+1 (555) 654-3210', status: 'Pending', source: 'Website Inquiry', assignedTo: 'John Sales-Exec', date: 'Oct 25, 2023', executiveId: 4 },
 ];
 
 // Helper to manage users and leads in localStorage for persistence during demo
@@ -61,6 +62,37 @@ export const createUserMock = async (userData) => {
         ...userData,
       };
       saveMockUsers([...users, newUser]);
+
+      // ─── Notifications ────────────────────────────────────────
+      // Notify the newly created user
+      pushNotification({
+        recipientId: newUser.id,
+        type: 'user_created',
+        title: 'Welcome to LeadCRM!',
+        message: `You've been added as a ${newUser.role}. Login with your credentials to get started.`,
+      });
+
+      // If an Executive was created under a Manager, notify that Manager
+      if (newUser.role === 'Executive' && newUser.managerId) {
+        pushNotification({
+          recipientId: newUser.managerId,
+          type: 'user_created',
+          title: 'New Team Member',
+          message: `${newUser.name} has been added to your team as an Executive.`,
+        });
+      }
+
+      // If a Manager was created, notify the Admin (id: 1)
+      if (newUser.role === 'Manager') {
+        pushNotification({
+          recipientId: 1,
+          type: 'user_created',
+          title: 'New Manager Onboarded',
+          message: `${newUser.name} has been added as a Manager and is ready to go.`,
+        });
+      }
+      // ──────────────────────────────────────────────────────────
+
       resolve(newUser);
     }, 600);
   });
@@ -150,6 +182,7 @@ export const fetchStatsMock = async (user) => {
 export const fetchTeamHierarchyMock = async (user) => {
   return new Promise((resolve) => {
     setTimeout(() => {
+      const leads = getMockLeads();
       const users = getMockUsers();
       const allManagers = users.filter(u => u.role === 'Manager');
       
@@ -157,9 +190,10 @@ export const fetchTeamHierarchyMock = async (user) => {
         manager: m.name,
         managerId: m.id,
         members: users.filter(u => u.managerId === m.id).map(u => ({
+          id: u.id,
           name: u.name,
           email: u.email,
-          leads: Math.floor(Math.random() * 50) + 10 // Mock lead count
+          leads: leads.filter(l => l.executiveId === u.id).length
         }))
       }));
 
@@ -167,9 +201,10 @@ export const fetchTeamHierarchyMock = async (user) => {
       const directReports = users
         .filter(u => u.role === 'Executive' && (!u.managerId || u.managerId === 1))
         .map(u => ({
+          id: u.id,
           name: u.name,
           email: u.email,
-          leads: Math.floor(Math.random() * 50) + 5
+          leads: leads.filter(l => l.executiveId === u.id).length
         }));
 
       if (directReports.length > 0 && user?.role === 'Admin') {
@@ -228,13 +263,24 @@ export const updateLeadAssignmentMock = async (leadId, executiveId) => {
       const leadIndex = leads.findIndex(l => l.id === parseInt(leadId));
       
       if (leadIndex !== -1 && executive) {
+        const lead = leads[leadIndex];
         leads[leadIndex] = {
-          ...leads[leadIndex],
+          ...lead,
           executiveId: executive.id,
           assignedTo: executive.name,
           status: 'Contacted' // Automatically move to contacted on assignment
         };
         saveMockLeads(leads);
+
+        // ─── Notification: tell the Executive ──────────────────
+        pushNotification({
+          recipientId: executive.id,
+          type: 'lead_assigned',
+          title: 'New Lead Assigned',
+          message: `"${lead.name}" has been assigned to you. Check your Tasks page to follow up.`,
+        });
+        // ───────────────────────────────────────────────────────
+
         resolve(leads[leadIndex]);
       } else {
         resolve(null);

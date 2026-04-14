@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { RoleGate } from './context/RoleGate';
 import AppLayout from './layouts/AppLayout';
 import Dashboard from './pages/Dashboard';
@@ -173,49 +174,51 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            
-            <Route path="/dashboard" element={
-              <ProtectedWrapper allowedRoles={['Admin', 'Manager']}>
-                <Dashboard />
-              </ProtectedWrapper>
-            } />
-            
-            <Route path="/leads" element={
-              <ProtectedWrapper allowedRoles={['Admin', 'Manager']}>
-                <Leads />
-              </ProtectedWrapper>
-            } />
+        <NotificationProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              
+              <Route path="/dashboard" element={
+                <ProtectedWrapper allowedRoles={['Admin', 'Manager']}>
+                  <Dashboard />
+                </ProtectedWrapper>
+              } />
+              
+              <Route path="/leads" element={
+                <ProtectedWrapper allowedRoles={['Admin', 'Manager']}>
+                  <Leads />
+                </ProtectedWrapper>
+              } />
 
-            <Route path="/tasks" element={
-              <ProtectedWrapper allowedRoles={['Executive']}>
-                <Tasks />
-              </ProtectedWrapper>
-            } />
+              <Route path="/tasks" element={
+                <ProtectedWrapper allowedRoles={['Executive']}>
+                  <Tasks />
+                </ProtectedWrapper>
+              } />
 
-            <Route path="/managers" element={
-              <ProtectedWrapper allowedRoles={['Admin']}>
-                <Managers />
-              </ProtectedWrapper>
-            } />
+              <Route path="/managers" element={
+                <ProtectedWrapper allowedRoles={['Admin']}>
+                  <Managers />
+                </ProtectedWrapper>
+              } />
 
-            <Route path="/executives" element={
-              <ProtectedWrapper allowedRoles={['Admin']}>
-                <Executives />
-              </ProtectedWrapper>
-            } />
+              <Route path="/executives" element={
+                <ProtectedWrapper allowedRoles={['Admin']}>
+                  <Executives />
+                </ProtectedWrapper>
+              } />
 
-            <Route path="/teams" element={
-              <ProtectedWrapper allowedRoles={['Manager']}>
-                <Teams />
-              </ProtectedWrapper>
-            } />
+              <Route path="/teams" element={
+                <ProtectedWrapper allowedRoles={['Manager']}>
+                  <Teams />
+                </ProtectedWrapper>
+              } />
 
-            <Route path="/" element={<Home />} />
-          </Routes>
-        </BrowserRouter>
+              <Route path="/" element={<Home />} />
+            </Routes>
+          </BrowserRouter>
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

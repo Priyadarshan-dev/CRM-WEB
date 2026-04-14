@@ -11,7 +11,8 @@ import {
   User as UserIcon,
   Mail,
   Globe,
-  Briefcase
+  Briefcase,
+  Phone
 } from 'lucide-react';
 import { fetchLeadsMock, createLeadMock } from '../services/mockApi';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +30,7 @@ const Leads = () => {
   const [leadForm, setLeadForm] = React.useState({
     name: '',
     email: '',
+    phone: '',
     source: 'Website',
     status: 'New'
   });
@@ -44,7 +46,7 @@ const Leads = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       setIsModalOpen(false);
-      setLeadForm({ name: '', email: '', source: 'Website', status: 'New' });
+      setLeadForm({ name: '', email: '', phone: '', source: 'Website', status: 'New' });
     }
   });
 
@@ -138,6 +140,7 @@ const Leads = () => {
             <thead>
               <tr className="bg-slate-50/50 text-slate-500 text-[11px] font-bold uppercase tracking-widest border-b border-slate-100">
                 <th className="px-6 py-5">Lead Information</th>
+                <th className="px-6 py-5">Phone Number</th>
                 <th className="px-6 py-5">Status</th>
                 <th className="px-6 py-5">Source</th>
                 <th className="px-6 py-5">Assigned To</th>
@@ -157,6 +160,12 @@ const Leads = () => {
                         <div className="font-bold text-slate-900">{lead.name}</div>
                         <div className="text-xs text-slate-500 font-medium">{lead.email}</div>
                       </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
+                      <Phone className="w-3.5 h-3.5 text-slate-400" />
+                      {lead.phone || 'N/A'}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -259,6 +268,20 @@ const Leads = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      required
+                      type="tel"
+                      value={leadForm.phone}
+                      onChange={(e) => setLeadForm({...leadForm, phone: e.target.value})}
+                      className="w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-[20px] focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all text-sm"
+                      placeholder="+1 (555) 000-0000"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Lead Source</label>
                   <div className="relative">
                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -275,6 +298,9 @@ const Leads = () => {
                     </select>
                   </div>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Initial Status</label>
                   <div className="relative">
