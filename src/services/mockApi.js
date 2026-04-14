@@ -189,6 +189,24 @@ export const fetchTeamHierarchyMock = async (user) => {
     }, 500);
   });
 };
+export const fetchUsersByRoleMock = async (role) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const users = getMockUsers();
+      const filtered = users
+        .filter(u => u.role === role)
+        .map(u => {
+          if (role === 'Executive') {
+            const manager = users.find(m => m.id === u.managerId);
+            return { ...u, managerName: manager ? manager.name : 'Direct Report' };
+          }
+          return u;
+        });
+      resolve(filtered);
+    }, 500);
+  });
+};
+
 export const fetchManagersShortMock = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {

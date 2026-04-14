@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
+  Shield,
   Bell, 
   Settings, 
   LogOut, 
@@ -18,7 +19,9 @@ const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Admin', 'Manager'] },
     { name: 'Leads', icon: Users, path: '/leads', roles: ['Admin', 'Manager'] },
-    { name: 'Teams', icon: Target, path: '/teams', roles: ['Admin', 'Manager'] },
+    { name: 'Managers', icon: Shield, path: '/managers', roles: ['Admin'] },
+    { name: 'Executives', icon: Target, path: '/executives', roles: ['Admin'] },
+    { name: 'Teams', icon: Target, path: '/teams', roles: ['Manager'] },
     { name: 'Daily Tasks', icon: ClipboardList, path: '/tasks', roles: ['Executive'] },
     { name: 'Notifications', icon: Bell, path: '/notifications', roles: ['Admin', 'Manager', 'Executive'] },
     { name: 'Settings', icon: Settings, path: '/settings', roles: ['Admin'] },

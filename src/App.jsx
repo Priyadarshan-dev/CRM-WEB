@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
 import Tasks from './pages/Tasks';
 import Teams from './pages/Teams';
+import Managers from './pages/Managers';
+import Executives from './pages/Executives';
 import { Eye, EyeOff } from 'lucide-react';
 
 const queryClient = new QueryClient();
@@ -117,7 +119,7 @@ const Login = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all bg-slate-50/50 pr-12"
                   placeholder="••••••••"
                 />
@@ -193,8 +195,20 @@ function App() {
               </ProtectedWrapper>
             } />
 
+            <Route path="/managers" element={
+              <ProtectedWrapper allowedRoles={['Admin']}>
+                <Managers />
+              </ProtectedWrapper>
+            } />
+
+            <Route path="/executives" element={
+              <ProtectedWrapper allowedRoles={['Admin']}>
+                <Executives />
+              </ProtectedWrapper>
+            } />
+
             <Route path="/teams" element={
-              <ProtectedWrapper allowedRoles={['Admin', 'Manager']}>
+              <ProtectedWrapper allowedRoles={['Manager']}>
                 <Teams />
               </ProtectedWrapper>
             } />

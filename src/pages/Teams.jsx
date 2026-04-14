@@ -261,7 +261,7 @@ const Teams = () => {
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  autoComplete="none"
+                  autoComplete="new-password"
                   className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
                   placeholder="robert@crm.com"
                 />
