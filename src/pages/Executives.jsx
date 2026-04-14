@@ -12,9 +12,56 @@ import {
   Mail,
   ShieldCheck,
   ChevronDown,
-  Star
+  Star,
+  UserCheck,
+  AlertCircle
 } from 'lucide-react';
-import { fetchUsersByRoleMock, createUserMock, fetchManagersShortMock } from '../services/mockApi';
+import { 
+  fetchUsersByRoleMock, 
+  createUserMock, 
+  fetchManagersShortMock, 
+  fetchLeadsMock,
+  updateLeadAssignmentMock 
+} from '../services/mockApi';
+
+const AssignmentLeadCard = ({ lead, executives, onAssign }) => {
+  const [isAssigning, setIsAssigning] = React.useState(false);
+
+  return (
+    <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between group animate-in fade-in duration-300">
+      <div className="flex items-center gap-4">
+        <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+          <AlertCircle className="w-5 h-5" />
+        </div>
+        <div>
+          <h4 className="font-bold text-slate-900 text-sm">{lead.name}</h4>
+          <p className="text-[10px] text-slate-500 font-medium">{lead.email} • {lead.source}</p>
+        </div>
+      </div>
+
+      <div className="relative group/select">
+        <select
+          disabled={isAssigning}
+          onChange={async (e) => {
+            setIsAssigning(true);
+            await onAssign(lead.id, e.target.value);
+            setIsAssigning(false);
+          }}
+          className="pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none min-w-[140px] hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer disabled:opacity-50"
+          value=""
+        >
+          <option value="" disabled>Quick Assign to...</option>
+          {executives?.map(exec => (
+            <option key={exec.id} value={exec.id}>{exec.name}</option>
+          ))}
+        </select>
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover/select:text-white transition-colors">
+          {isAssigning ? <Loader2 className="w-3 h-3 animate-spin" /> : <ChevronDown className="w-3 h-3" />}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ExecutiveCard = ({ name, email, managerName }) => (
   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-primary/30 transition-all group">
@@ -59,6 +106,7 @@ const Executives = () => {
   });
   const [showPassword, setShowPassword] = React.useState(false);
 
+  // Fetch Executives
   const { data: executives, isLoading } = useQuery({
     queryKey: ['executives'],
     queryFn: () => fetchUsersByRoleMock('Executive'),

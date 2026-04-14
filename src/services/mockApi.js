@@ -218,3 +218,27 @@ export const fetchManagersShortMock = async () => {
     }, 400);
   });
 };
+export const updateLeadAssignmentMock = async (leadId, executiveId) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const leads = getMockLeads();
+      const users = getMockUsers();
+      
+      const executive = users.find(u => u.id === parseInt(executiveId));
+      const leadIndex = leads.findIndex(l => l.id === parseInt(leadId));
+      
+      if (leadIndex !== -1 && executive) {
+        leads[leadIndex] = {
+          ...leads[leadIndex],
+          executiveId: executive.id,
+          assignedTo: executive.name,
+          status: 'Contacted' // Automatically move to contacted on assignment
+        };
+        saveMockLeads(leads);
+        resolve(leads[leadIndex]);
+      } else {
+        resolve(null);
+      }
+    }, 600);
+  });
+};
