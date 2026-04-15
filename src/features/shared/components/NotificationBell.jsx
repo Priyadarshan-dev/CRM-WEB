@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell, Check, CheckCheck, Clock } from 'lucide-react';
-import { useNotifications } from '../context/NotificationContext';
+import { useNotifications } from '../../../core/context/NotificationContext';
 
 const timeAgo = (timestamp) => {
   const diff = Date.now() - timestamp;

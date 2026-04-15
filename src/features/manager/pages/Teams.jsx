@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../../core/context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Users, 
@@ -26,7 +26,7 @@ import {
   fetchLeadsMock, 
   fetchUsersByRoleMock, 
   updateLeadAssignmentMock 
-} from '../services/mockApi';
+} from '../../../core/services/mockApi';
 
 // ─── Team Member Card ───────────────────────────────────────────────────────
 const TeamMemberCard = ({ name, email, leads }) => (

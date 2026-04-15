@@ -7,8 +7,8 @@ import {
   Clock,
   Loader2
 } from 'lucide-react';
-import { fetchStatsMock } from '../services/mockApi';
-import { useAuth } from '../context/AuthContext';
+import { fetchStatsMock } from '../../../core/services/mockApi';
+import { useAuth } from '../../../core/context/AuthContext';
 
 const StatCard = ({ title, value, change, icon: Icon, color }) => (
   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">

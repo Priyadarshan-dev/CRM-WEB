@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../../core/context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Shield, 
@@ -11,7 +11,7 @@ import {
   ChevronRight,
   Mail
 } from 'lucide-react';
-import { fetchUsersByRoleMock, createUserMock } from '../services/mockApi';
+import { fetchUsersByRoleMock, createUserMock } from '../../../core/services/mockApi';
 
 const ManagerCard = ({ name, email }) => (
   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-primary/30 transition-all group">

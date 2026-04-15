@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../../core/context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Target, 
@@ -22,7 +22,7 @@ import {
   fetchManagersShortMock, 
   fetchLeadsMock,
   updateLeadAssignmentMock 
-} from '../services/mockApi';
+} from '../../../core/services/mockApi';
 
 const AssignmentLeadCard = ({ lead, executives, onAssign }) => {
   const [isAssigning, setIsAssigning] = React.useState(false);

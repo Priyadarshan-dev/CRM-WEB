@@ -11,7 +11,7 @@ import {
   ClipboardList,
   Target
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../../core/context/AuthContext';
 
 const Sidebar = () => {
   const { user, logout } = useAuth();

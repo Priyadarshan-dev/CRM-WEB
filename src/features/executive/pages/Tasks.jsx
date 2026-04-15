@@ -12,8 +12,8 @@ import {
   TrendingUp,
   Star
 } from 'lucide-react';
-import { fetchLeadsMock } from '../services/mockApi';
-import { useAuth } from '../context/AuthContext';
+import { fetchLeadsMock } from '../../../core/services/mockApi';
+import { useAuth } from '../../../core/context/AuthContext';
 
 const getStatusColor = (status) => {
   switch (status) {

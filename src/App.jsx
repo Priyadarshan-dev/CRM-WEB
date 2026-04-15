@@ -1,19 +1,35 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
-import { RoleGate } from './context/RoleGate';
-import AppLayout from './layouts/AppLayout';
-import Dashboard from './pages/Dashboard';
-import Leads from './pages/Leads';
-import Tasks from './pages/Tasks';
-import Teams from './pages/Teams';
-import Managers from './pages/Managers';
-import Executives from './pages/Executives';
+import { AuthProvider, useAuth } from './core/context/AuthContext';
+import { NotificationProvider } from './core/context/NotificationContext';
+import { RoleGate } from './core/context/RoleGate';
+import AppLayout from './features/shared/layouts/AppLayout';
+import AdminDashboard from './features/admin/pages/AdminDashboard';
+import ManagerDashboard from './features/manager/pages/ManagerDashboard';
+import AdminLeads from './features/admin/pages/AdminLeads';
+import ManagerLeads from './features/manager/pages/ManagerLeads';
+import Tasks from './features/executive/pages/Tasks';
+import Teams from './features/manager/pages/Teams';
+import Managers from './features/admin/pages/Managers';
+import Executives from './features/admin/pages/Executives';
 import { Eye, EyeOff } from 'lucide-react';
 
 const queryClient = new QueryClient();
+
+const RoleBasedDashboard = () => {
+  const { user } = useAuth();
+  if (user?.role === 'Admin') return <AdminDashboard />;
+  if (user?.role === 'Manager') return <ManagerDashboard />;
+  return <Navigate to="/login" />;
+};
+
+const RoleBasedLeads = () => {
+  const { user } = useAuth();
+  if (user?.role === 'Admin') return <AdminLeads />;
+  if (user?.role === 'Manager') return <ManagerLeads />;
+  return <Navigate to="/login" />;
+};
 
 const Home = () => {
   const { user, loading } = useAuth();
@@ -181,13 +197,13 @@ function App() {
               
               <Route path="/dashboard" element={
                 <ProtectedWrapper allowedRoles={['Admin', 'Manager']}>
-                  <Dashboard />
+                  <RoleBasedDashboard />
                 </ProtectedWrapper>
               } />
               
               <Route path="/leads" element={
                 <ProtectedWrapper allowedRoles={['Admin', 'Manager']}>
-                  <Leads />
+                  <RoleBasedLeads />
                 </ProtectedWrapper>
               } />
 

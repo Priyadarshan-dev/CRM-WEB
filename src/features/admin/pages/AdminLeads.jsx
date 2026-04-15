@@ -14,8 +14,8 @@ import {
   Briefcase,
   Phone
 } from 'lucide-react';
-import { fetchLeadsMock, createLeadMock } from '../services/mockApi';
-import { useAuth } from '../context/AuthContext';
+import { fetchLeadsMock, createLeadMock } from '../../../core/services/mockApi';
+import { useAuth } from '../../../core/context/AuthContext';
 
 const Leads = () => {
   const { user } = useAuth();
