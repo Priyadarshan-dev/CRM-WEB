@@ -8,6 +8,14 @@ const INITIAL_USERS = [
   { id: 4, name: 'John Sales-Exec', role: 'Executive', email: 'john@crm.com', password: 'password123', managerId: 2 },
   { id: 5, name: 'Emma Sales-Exec', role: 'Executive', email: 'emma@crm.com', password: 'password123', managerId: 2 },
   { id: 6, name: 'David Sales-Exec', role: 'Executive', email: 'david@crm.com', password: 'password123', managerId: 3 },
+  ...Array.from({ length: 15 }, (_, i) => ({
+    id: i + 10,
+    name: `Exec ${i + 1}`,
+    role: 'Executive',
+    email: `exec${i + 1}@crm.com`,
+    password: 'password123',
+    managerId: 2 
+  }))
 ];
 
 const MOCK_LEADS = [
@@ -16,6 +24,28 @@ const MOCK_LEADS = [
   { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', phone: '+1 (555) 456-7890', status: 'Qualified', source: 'Referral', assignedTo: 'David Sales-Exec', date: 'Oct 22, 2023', executiveId: 6 },
   { id: 4, name: 'Emily Rodgers', email: 'emily@example.com', phone: '+1 (555) 321-0987', status: 'New', source: 'Facebook Lead', assignedTo: 'Emma Sales-Exec', date: 'Oct 25, 2023', executiveId: 5 },
   { id: 5, name: 'Marcus Chen', email: 'marcus@example.com', phone: '+1 (555) 654-3210', status: 'Pending', source: 'Website Inquiry', assignedTo: 'John Sales-Exec', date: 'Oct 25, 2023', executiveId: 4 },
+  ...Array.from({ length: 25 }, (_, i) => ({
+    id: i + 6,
+    name: `Assigned Lead ${i + 1}`,
+    email: `lead${i+1}@example.com`,
+    phone: `+1 (555) 111-${String(i).padStart(4, '0')}`,
+    status: ['New', 'Contacted', 'Pending'][i % 3],
+    source: 'Website',
+    assignedTo: 'John Sales-Exec',
+    date: 'Oct 26, 2023',
+    executiveId: 4
+  })),
+  ...Array.from({ length: 20 }, (_, i) => ({
+    id: i + 100,
+    name: `Unassigned Lead ${i + 1}`,
+    email: `unassigned${i+1}@example.com`,
+    phone: `+1 (555) 222-${String(i).padStart(4, '0')}`,
+    status: 'New',
+    source: i % 2 === 0 ? 'Facebook' : 'Website',
+    assignedTo: 'Unassigned',
+    date: 'Oct 27, 2023',
+    executiveId: null
+  }))
 ];
 
 // Helper to manage users and leads in localStorage for persistence during demo
@@ -30,7 +60,12 @@ const saveMockUsers = (users) => {
 
 const getMockLeads = () => {
   const saved = localStorage.getItem('crm_mock_leads');
-  return saved ? JSON.parse(saved) : MOCK_LEADS;
+  const leads = saved ? JSON.parse(saved) : MOCK_LEADS;
+  if (leads.length < 25) {
+    localStorage.setItem('crm_mock_leads', JSON.stringify(MOCK_LEADS));
+    return MOCK_LEADS;
+  }
+  return leads;
 };
 
 const saveMockLeads = (leads) => {
@@ -285,6 +320,69 @@ export const updateLeadAssignmentMock = async (leadId, executiveId) => {
       } else {
         resolve(null);
       }
+    }, 600);
+  });
+};
+
+// Helper: find a value from a CSV row by trying multiple possible column name spellings
+const normalizeKey = (obj, keys) => {
+  const lc = Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [k.trim().toLowerCase(), typeof v === 'string' ? v.trim() : v])
+  );
+  for (const k of keys) {
+    if (lc[k] !== undefined && lc[k] !== '') return lc[k];
+  }
+  return '';
+};
+
+export const bulkCreateLeadsMock = async (leadsArray) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const existing = getMockLeads();
+      const today = new Date().toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+      });
+
+      const newLeads = leadsArray.map((row, i) => ({
+        id: existing.length + i + 1,
+        name:   normalizeKey(row, ['name', 'full name', 'fullname', 'lead name']) || `Lead ${existing.length + i + 1}`,
+        email:  normalizeKey(row, ['email', 'email address', 'e-mail']),
+        phone:  normalizeKey(row, ['phone', 'phone number', 'mobile', 'contact']) || 'N/A',
+        source: normalizeKey(row, ['source', 'lead source', 'channel']) || 'CSV Import',
+        status: normalizeKey(row, ['status', 'lead status']) || 'New',
+        assignedTo: 'Unassigned',
+        executiveId: null,
+        date: today,
+      }));
+
+      saveMockLeads([...newLeads, ...existing]);
+      resolve(newLeads);
+    }, 800);
+  });
+};
+export const updateLeadMock = async (id, leadData) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const leads = getMockLeads();
+      const index = leads.findIndex(l => l.id === parseInt(id));
+      if (index !== -1) {
+        leads[index] = { ...leads[index], ...leadData };
+        saveMockLeads(leads);
+        resolve(leads[index]);
+      } else {
+        resolve(null);
+      }
+    }, 600);
+  });
+};
+
+export const deleteLeadMock = async (id) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const leads = getMockLeads();
+      const filtered = leads.filter(l => l.id !== parseInt(id));
+      saveMockLeads(filtered);
+      resolve(true);
     }, 600);
   });
 };

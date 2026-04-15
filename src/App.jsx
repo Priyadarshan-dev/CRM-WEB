@@ -10,10 +10,12 @@ import ManagerDashboard from './features/manager/pages/ManagerDashboard';
 import AdminLeads from './features/admin/pages/AdminLeads';
 import ManagerLeads from './features/manager/pages/ManagerLeads';
 import Tasks from './features/executive/pages/Tasks';
+import Followups from './features/executive/pages/Followups';
 import Teams from './features/manager/pages/Teams';
 import Managers from './features/admin/pages/Managers';
 import Executives from './features/admin/pages/Executives';
 import { Eye, EyeOff } from 'lucide-react';
+import Notifications from './features/shared/pages/Notifications';
 
 const queryClient = new QueryClient();
 
@@ -213,6 +215,12 @@ function App() {
                 </ProtectedWrapper>
               } />
 
+              <Route path="/followups" element={
+                <ProtectedWrapper allowedRoles={['Executive']}>
+                  <Followups />
+                </ProtectedWrapper>
+              } />
+
               <Route path="/managers" element={
                 <ProtectedWrapper allowedRoles={['Admin']}>
                   <Managers />
@@ -228,6 +236,12 @@ function App() {
               <Route path="/teams" element={
                 <ProtectedWrapper allowedRoles={['Manager']}>
                   <Teams />
+                </ProtectedWrapper>
+              } />
+
+              <Route path="/notifications" element={
+                <ProtectedWrapper allowedRoles={['Admin', 'Manager', 'Executive']}>
+                  <Notifications />
                 </ProtectedWrapper>
               } />
 

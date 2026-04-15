@@ -6,6 +6,7 @@ import {
   UserPlus, 
   Shield, 
   ChevronRight,
+  ChevronLeft,
   Target,
   X,
   Loader2,
@@ -17,7 +18,8 @@ import {
   ClipboardList,
   CheckCircle2,
   ArrowRight,
-  Zap
+  Zap,
+  UserCheck
 } from 'lucide-react';
 import { 
   fetchTeamHierarchyMock, 
@@ -25,8 +27,10 @@ import {
   fetchManagersShortMock, 
   fetchLeadsMock, 
   fetchUsersByRoleMock, 
-  updateLeadAssignmentMock 
+  updateLeadAssignmentMock
 } from '../../../core/services/mockApi';
+
+
 
 // ─── Team Member Card ───────────────────────────────────────────────────────
 const TeamMemberCard = ({ name, email, leads }) => (
@@ -50,84 +54,242 @@ const TeamMemberCard = ({ name, email, leads }) => (
   </div>
 );
 
-// ─── Assign Lead Card (used in Assign tab) ──────────────────────────────────
-const AssignLeadCard = ({ lead, executives, onAssign }) => {
-  const [selectedExec, setSelectedExec] = React.useState('');
-  const [isAssigning, setIsAssigning] = React.useState(false);
-  const [isAssigned, setIsAssigned] = React.useState(false);
+// ─── Executive Picker Panel (full-screen overlay) ───────────────────────────
+const ExecutivePickerPanel = ({ lead, executives, onAssign, onClose }) => {
+  const [assigningId, setAssigningId] = React.useState(null);
+  const [assignedId, setAssignedId] = React.useState(null);
 
-  const handleAssign = async () => {
-    if (!selectedExec) return;
-    setIsAssigning(true);
-    await onAssign(lead.id, selectedExec);
-    setIsAssigning(false);
-    setIsAssigned(true);
+  const handleAssign = async (exec) => {
+    setAssigningId(exec.id);
+    await onAssign(lead.id, exec.id);
+    setAssignedId(exec.id);
+    setAssigningId(null);
+    // Small delay so user sees success, then close
+    setTimeout(() => onClose(exec), 600);
   };
 
-  if (isAssigned) {
-    const exec = executives?.find(e => String(e.id) === String(selectedExec));
-    return (
-      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 font-bold text-lg flex-shrink-0">
-          <CheckCircle2 className="w-6 h-6" />
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col">
+
+      {/* Top Nav Bar */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => onClose(null)}
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-semibold text-sm transition-colors group"
+          >
+            <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Assign Leads
+          </button>
+          <div className="h-5 w-px bg-slate-200" />
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Select an Executive</h2>
+            <p className="text-xs text-slate-400">Choose who to assign this lead to</p>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-slate-900 text-sm truncate">{lead.name}</h4>
-          <p className="text-xs text-green-600 font-semibold mt-0.5">
-            ✓ Assigned to {exec?.name || 'Executive'}
+      </div>
+
+      {/* Lead Detail Card */}
+      {/* <div className="px-12 py-8 flex-shrink-0 flex flex-col items-center">
+        <p className="text-xs font-bold text-primary uppercase tracking-widest mb-4 text-center">Assigning This Lead</p>
+        <div className="flex items-center justify-between gap-4 bg-white border-2 border-primary/20 rounded-[24px] px-6 py-5 w-full max-w-xl shadow-xl shadow-primary/5">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white text-2xl flex-shrink-0 shadow-md transform -rotate-3 transition-transform hover:rotate-0 hover:scale-105">
+              {lead.name.charAt(0)}
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-slate-900 text-lg">{lead.name}</h3>
+              <p className="text-sm text-slate-500 truncate mt-0.5">{lead.email}</p>
+            </div>
+          </div>
+          <span className="px-4 py-1.5 bg-slate-100 text-slate-600 border border-slate-200 shadow-sm rounded-full text-xs font-bold uppercase tracking-wider flex-shrink-0">
+            {lead.source}
+          </span>
+        </div>
+      </div> */}
+      {/* Assigning Lead Section */}
+<div className="px-12 py-8 flex-shrink-0 flex flex-col items-center">
+  
+  {/* Title */}
+  <p className="text-xs font-bold text-primary uppercase tracking-widest mb-4 text-center">
+    Assigning This Lead
+  </p>
+
+  {/* Lead Card */}
+  <div className="flex items-center justify-between gap-4 bg-white border-2 border-primary/20 rounded-[24px] px-6 py-5 w-full max-w-3xl shadow-xl shadow-primary/5 transition-all hover:shadow-primary/10 hover:-translate-y-1">
+    
+    {/* LEFT SIDE */}
+    <div className="flex items-center gap-4 min-w-0">
+      
+      {/* Avatar */}
+      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center font-bold text-white text-2xl flex-shrink-0 shadow-md transform -rotate-3 transition-transform hover:rotate-0 hover:scale-105">
+        {lead.name.charAt(0)}
+      </div>
+
+      {/* Lead Info */}
+      <div className="min-w-0">
+        <h3 className="font-bold text-slate-900 text-lg">
+          {lead.name}
+        </h3>
+        <p className="text-sm text-slate-500 truncate mt-0.5">
+          {lead.email}
+        </p>
+      </div>
+    </div>
+
+    {/* RIGHT SIDE */}
+    <span className="px-4 py-1.5 bg-slate-100 text-slate-600 border border-slate-200 shadow-sm rounded-full text-xs font-bold uppercase tracking-wider flex-shrink-0">
+      {lead.source}
+    </span>
+
+  </div>
+</div>
+
+      {/* Executive List */}
+      <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="max-w-3xl mx-auto">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">
+            Your Team — {executives.length} Executive{executives.length !== 1 ? 's' : ''}
           </p>
-          <p className="text-[10px] text-slate-400 mt-0.5">{lead.email}</p>
+
+          {executives.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                <Users className="w-8 h-8 text-slate-300" />
+              </div>
+              <h3 className="text-slate-700 font-bold">No executives in your team</h3>
+              <p className="text-slate-400 text-sm mt-1">Add executives from the My Team tab first.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {executives.map(exec => {
+                const isThisAssigning = assigningId === exec.id;
+                const isThisAssigned = assignedId === exec.id;
+                return (
+                  <div
+                    key={exec.id}
+                    className={`bg-white border rounded-2xl p-4 flex items-center justify-between gap-4 transition-all ${
+                      isThisAssigned
+                        ? 'border-green-200 bg-green-50'
+                        : 'border-slate-200 hover:border-primary/30 hover:shadow-sm'
+                    }`}
+                  >
+                    {/* Avatar + Info */}
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0 transition-colors ${
+                        isThisAssigned
+                          ? 'bg-green-100 text-green-600'
+                          : 'bg-gradient-to-br from-primary/20 to-accent/20 text-primary'
+                      }`}>
+                        {isThisAssigned
+                          ? <CheckCircle2 className="w-5 h-5" />
+                          : exec.name.charAt(0)
+                        }
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 text-sm">{exec.name}</h4>
+                        <p className="text-xs text-slate-500 truncate mt-0.5">{exec.email}</p>
+                      </div>
+                    </div>
+
+                    {/* Assign button */}
+                    <button
+                      onClick={() => !assignedId && handleAssign(exec)}
+                      disabled={!!assigningId || !!assignedId}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex-shrink-0 ${
+                        isThisAssigned
+                          ? 'bg-green-500 text-white cursor-default'
+                          : 'bg-slate-900 text-white hover:bg-primary shadow-sm disabled:opacity-40 disabled:cursor-not-allowed'
+                      }`}
+                    >
+                      {isThisAssigning ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Assigning...</>
+                      ) : isThisAssigned ? (
+                        <><CheckCircle2 className="w-3.5 h-3.5" /> Assigned</>
+                      ) : (
+                        <><UserCheck className="w-3.5 h-3.5" /> Assign</>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Assign Lead Card ────────────────────────────────────────────────────────
+const AssignLeadCard = ({ lead, executives, onAssign }) => {
+  const [isPickerOpen, setIsPickerOpen] = React.useState(false);
+  const [assignedExec, setAssignedExec] = React.useState(null);
+
+  const handlePickerClose = (exec) => {
+    setIsPickerOpen(false);
+    if (exec) setAssignedExec(exec);
+  };
+
+  // Assigned confirmation row
+  if (assignedExec) {
+    return (
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="font-bold text-slate-900 text-sm truncate">{lead.name}</h4>
+            <p className="text-[10px] text-slate-500 mt-0.5 truncate">{lead.email}</p>
+          </div>
+        </div>
+        <p className="text-xs text-green-600 font-semibold bg-green-100/60 px-3 py-1.5 rounded-lg border border-green-200/60 flex-shrink-0">
+          ✓ Assigned to {assignedExec.name}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-primary/30 hover:shadow-md transition-all group">
-      <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center font-bold text-primary text-lg flex-shrink-0">
-          {lead.name.charAt(0)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
+    <>
+      {/* Full-screen Executive Picker */}
+      {isPickerOpen && (
+        <ExecutivePickerPanel
+          lead={lead}
+          executives={executives}
+          onAssign={onAssign}
+          onClose={handlePickerClose}
+        />
+      )}
+
+      {/* Lead row */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-primary/20 hover:shadow-sm transition-all group">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center font-bold text-primary text-lg flex-shrink-0">
+            {lead.name.charAt(0)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
               <h4 className="font-bold text-slate-900 text-sm truncate">{lead.name}</h4>
-              <p className="text-xs text-slate-500 truncate mt-0.5">{lead.email}</p>
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0 hidden sm:inline-block">
+                {lead.source}
+              </span>
             </div>
-            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0">
-              {lead.source}
-            </span>
-          </div>
-          <div className="mt-4 flex items-center gap-2">
-            <div className="relative flex-1">
-              <select
-                value={selectedExec}
-                onChange={(e) => setSelectedExec(e.target.value)}
-                className="w-full pl-3 pr-8 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 appearance-none bg-slate-50 hover:bg-white transition-all cursor-pointer"
-              >
-                <option value="" disabled>Select Executive...</option>
-                {executives?.map(exec => (
-                  <option key={exec.id} value={exec.id}>{exec.name}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-            </div>
-            <button
-              onClick={handleAssign}
-              disabled={!selectedExec || isAssigning}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-primary transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
-            >
-              {isAssigning ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <ArrowRight className="w-3.5 h-3.5" />
-              )}
-              Assign
-            </button>
+            <p className="text-xs text-slate-500 truncate mt-0.5">{lead.email}</p>
           </div>
         </div>
+
+        <button
+          onClick={() => setIsPickerOpen(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-primary transition-all shadow-sm flex-shrink-0"
+        >
+          <UserCheck className="w-4 h-4" />
+          Select Executive
+          <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+        </button>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -149,6 +311,11 @@ const Teams = () => {
   // New State for Role Selection (Admin only)
   const [newUserRole, setNewUserRole] = React.useState('Manager');
   const [selectedManagerId, setSelectedManagerId] = React.useState('direct');
+
+  // Pagination states
+  const [currentTeamPage, setCurrentTeamPage] = React.useState(1);
+  const [currentAssignPage, setCurrentAssignPage] = React.useState(1);
+  const itemsPerPage = 10;
 
   const { data: teamsData, isLoading, refetch } = useQuery({
     queryKey: ['teams', user?.id],
@@ -189,6 +356,12 @@ const Teams = () => {
     return allLeads.filter(lead => lead.assignedTo === 'Unassigned');
   }, [allLeads]);
 
+  const totalAssignPages = Math.ceil(leadsToAssign.length / itemsPerPage);
+  const paginatedLeadsToAssign = React.useMemo(() => {
+    const start = (currentAssignPage - 1) * itemsPerPage;
+    return leadsToAssign.slice(start, start + itemsPerPage);
+  }, [leadsToAssign, currentAssignPage]);
+
   const assignMutation = useMutation({
     mutationFn: ({ leadId, executiveId }) => updateLeadAssignmentMock(leadId, executiveId),
     onSuccess: () => {
@@ -198,6 +371,8 @@ const Teams = () => {
       queryClient.invalidateQueries(['teams']);
     }
   });
+
+
 
   React.useEffect(() => {
     if (user?.role === 'Manager') {
@@ -256,15 +431,11 @@ const Teams = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Assign Now button — manager only */}
-          {isManager && (
+          {/* Assign Now button — only visible on My Team tab */}
+          {isManager && activeTab === 'teams' && (
             <button
               onClick={() => setActiveTab('assign')}
-              className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold transition-all shadow-lg group relative ${
-                activeTab === 'assign'
-                  ? 'bg-primary text-white shadow-primary/30'
-                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200'
-              }`}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold transition-all shadow-lg group relative bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200"
             >
               <Zap className="w-4 h-4" />
               <span>Assign Now</span>
@@ -276,7 +447,10 @@ const Teams = () => {
             </button>
           )}
 
-          {(user?.role === 'Admin' || user?.role === 'Manager') && (
+
+
+          {/* Add Executive button — only visible on My Team tab */}
+          {(user?.role === 'Admin' || user?.role === 'Manager') && activeTab === 'teams' && (
             <button 
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl font-bold hover:bg-primary transition-all shadow-lg shadow-black/10 group"
@@ -356,7 +530,7 @@ const Teams = () => {
 
               {/* Executive Rows */}
               <div className="divide-y divide-slate-100">
-                {team.members.map((member, midx) => (
+                {team.members.slice((currentTeamPage - 1) * itemsPerPage, currentTeamPage * itemsPerPage).map((member, midx) => (
                   <div
                     key={midx}
                     className="grid grid-cols-12 gap-4 items-center px-6 py-4 hover:bg-primary/[0.03] transition-all group cursor-pointer"
@@ -393,6 +567,25 @@ const Teams = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Pagination for Team Members */}
+              {Math.ceil(team.members.length / itemsPerPage) > 1 && (
+                <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-center bg-slate-50/50 gap-2">
+                  {Array.from({ length: Math.ceil(team.members.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentTeamPage(page)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                        currentTeamPage === page
+                          ? 'bg-slate-900 text-white shadow-md'
+                          : 'bg-white text-slate-500 border border-slate-200 hover:border-primary/50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           
@@ -410,50 +603,7 @@ const Teams = () => {
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'assign' && isManager && (
         <div className="space-y-6">
-          {/* Header banner */}
-          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-[28px] p-7 flex items-center justify-between shadow-2xl">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
-                <ClipboardList className="w-7 h-7 text-amber-400" />
-              </div>
-              <div>
-                <h2 className="text-white font-bold text-xl">Assign Leads to Executives</h2>
-                <p className="text-slate-400 text-sm mt-0.5">
-                  {leadsToAssign.length} lead{leadsToAssign.length !== 1 ? 's' : ''} waiting to be assigned to your team.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="bg-white/10 px-4 py-2 rounded-xl border border-white/10 text-center">
-                <div className="text-white text-2xl font-black">{leadsToAssign.length}</div>
-                <div className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Pending</div>
-              </div>
-              <div className="bg-white/10 px-4 py-2 rounded-xl border border-white/10 text-center">
-                <div className="text-white text-2xl font-black">{myExecutives.length}</div>
-                <div className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Executives</div>
-              </div>
-            </div>
-          </div>
 
-          {/* Executives in team */}
-          {myExecutives.length > 0 && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Your Team Members</h3>
-              <div className="flex flex-wrap gap-3">
-                {myExecutives.map(exec => (
-                  <div key={exec.id} className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-bold text-xs">
-                      {exec.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">{exec.name}</p>
-                      <p className="text-[10px] text-slate-400">{exec.email}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Leads grid */}
           {leadsToAssign.length === 0 ? (
@@ -479,20 +629,41 @@ const Teams = () => {
                 </h3>
                 <p className="text-xs text-slate-400 font-medium">Select an executive and click Assign</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {leadsToAssign.map(lead => (
-                  <AssignLeadCard
-                    key={lead.id}
-                    lead={lead}
-                    executives={myExecutives}
-                    onAssign={(leadId, execId) => assignMutation.mutateAsync({ leadId, executiveId: execId })}
-                  />
-                ))}
+                <div className="flex flex-col gap-3">
+                  {paginatedLeadsToAssign.map(lead => (
+                    <AssignLeadCard
+                      key={lead.id}
+                      lead={lead}
+                      executives={myExecutives}
+                      onAssign={(leadId, execId) => assignMutation.mutateAsync({ leadId, executiveId: execId })}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination for Unassigned Leads */}
+                {totalAssignPages > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-8">
+                    {Array.from({ length: totalAssignPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentAssignPage(page)}
+                        className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold transition-all ${
+                          currentAssignPage === page
+                            ? 'bg-slate-900 text-white shadow-lg shadow-black/10 scale-110'
+                            : 'bg-white text-slate-500 border border-slate-200 hover:border-primary/50 hover:text-primary hover:bg-primary/5'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
           )}
         </div>
       )}
+
+
 
       {/* ── Create User Modal ── */}
       {isModalOpen && (

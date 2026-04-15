@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  Phone, 
+  PhoneCall, 
   Clock, 
   MessageSquare, 
   CheckCircle2,
@@ -25,7 +25,7 @@ const getStatusColor = (status) => {
   }
 };
 
-const TaskCard = ({ lead }) => {
+const FollowupCard = ({ lead }) => {
   const [done, setDone] = React.useState(false);
 
   return (
@@ -42,7 +42,7 @@ const TaskCard = ({ lead }) => {
               ? 'bg-green-100 text-green-600'
               : 'bg-slate-100 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary'
           }`}>
-            {done ? <CheckCircle2 className="w-6 h-6" /> : <Phone className="w-6 h-6" />}
+            {done ? <CheckCircle2 className="w-6 h-6" /> : <PhoneCall className="w-6 h-6" />}
           </div>
 
           {/* Lead info */}
@@ -94,15 +94,15 @@ const TaskCard = ({ lead }) => {
   );
 };
 
-const Tasks = () => {
+const Followups = () => {
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = React.useState(1);
   
   const { data: myLeads, isLoading } = useQuery({
-    queryKey: ['leads', 'tasks', user?.id],
+    queryKey: ['leads', 'followups', user?.id],
     queryFn: () => fetchLeadsMock(user),
     enabled: !!user,
-    refetchInterval: 5000, // Poll every 5 seconds to catch new assignments
+    refetchInterval: 5000, 
   });
 
   if (isLoading) {
@@ -129,13 +129,13 @@ const Tasks = () => {
       <div className="bg-gradient-to-br from-primary to-accent p-8 rounded-3xl text-white shadow-xl">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Good morning, {user?.name?.split(' ')[0]}!</h1>
+            <h1 className="text-3xl font-bold">Follow-ups Dashboard</h1>
             <p className="mt-2 text-white/80 font-medium">
-              You have <span className="font-black text-white">{totalLeads}</span> leads assigned to you.
+              You have <span className="font-black text-white">{totalLeads}</span> leads queued for follow-up today.
             </p>
           </div>
           <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/20 text-center min-w-[100px]">
-            <div className="text-sm font-bold opacity-80 uppercase tracking-tighter">Leads</div>
+            <div className="text-sm font-bold opacity-80 uppercase tracking-tighter">Follow-ups</div>
             <div className="text-3xl font-black">{totalLeads}</div>
           </div>
         </div>
@@ -143,9 +143,9 @@ const Tasks = () => {
         {/* Mini stats */}
         <div className="mt-6 grid grid-cols-3 gap-3">
           {[
-            { label: 'Total Leads', value: totalLeads, icon: TrendingUp },
-            { label: 'New', value: newLeads, icon: Star },
-            { label: 'Contacted', value: contactedLeads, icon: Phone },
+            { label: 'Total Pending', value: totalLeads, icon: TrendingUp },
+            { label: 'New Leads', value: newLeads, icon: Star },
+            { label: 'Contacted', value: contactedLeads, icon: PhoneCall },
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="bg-white/10 rounded-xl p-3 border border-white/10 flex items-center gap-3">
               <Icon className="w-4 h-4 text-white/70" />
@@ -162,23 +162,23 @@ const Tasks = () => {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-primary" />
-            Your Assigned Leads
+            <PhoneCall className="w-5 h-5 text-primary" />
+            Your Follow-up Queue
           </h2>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Priority High</span>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Leads</span>
         </div>
 
         <div className="space-y-3">
           {paginatedLeads.map((lead) => (
-            <TaskCard key={lead.id} lead={lead} />
+            <FollowupCard key={lead.id} lead={lead} />
           ))}
           {!myLeads?.length && (
             <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-200">
               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Phone className="w-8 h-8 text-slate-200" />
+                <PhoneCall className="w-8 h-8 text-slate-200" />
               </div>
-              <h3 className="text-slate-600 font-bold">No leads assigned yet</h3>
-              <p className="text-slate-400 text-sm mt-1">Your manager will assign leads to you shortly.</p>
+              <h3 className="text-slate-600 font-bold">No follow-ups today</h3>
+              <p className="text-slate-400 text-sm mt-1">Check back later once new leads are assigned.</p>
             </div>
           )}
         </div>
@@ -206,4 +206,4 @@ const Tasks = () => {
   );
 };
 
-export default Tasks;
+export default Followups;

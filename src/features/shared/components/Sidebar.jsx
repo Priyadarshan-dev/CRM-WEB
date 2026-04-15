@@ -1,15 +1,16 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
+import {
+  LayoutDashboard,
+  Users,
   Shield,
-  Bell, 
-  Settings, 
-  LogOut, 
+  Bell,
+  Settings,
+  LogOut,
   ChevronRight,
   ClipboardList,
-  Target
+  Target,
+  Phone
 } from 'lucide-react';
 import { useAuth } from '../../../core/context/AuthContext';
 
@@ -22,6 +23,7 @@ const Sidebar = () => {
     { name: 'Managers', icon: Shield, path: '/managers', roles: ['Admin'] },
     { name: 'Executives', icon: Target, path: '/executives', roles: ['Admin'] },
     { name: 'Teams', icon: Target, path: '/teams', roles: ['Manager'] },
+    { name: 'Followups', icon: Phone, path: '/followups', roles: ['Executive'] },
     { name: 'Daily Tasks', icon: ClipboardList, path: '/tasks', roles: ['Executive'] },
     { name: 'Notifications', icon: Bell, path: '/notifications', roles: ['Admin', 'Manager', 'Executive'] },
     { name: 'Settings', icon: Settings, path: '/settings', roles: ['Admin'] },
@@ -44,8 +46,8 @@ const Sidebar = () => {
             to={item.path}
             className={({ isActive }) => `
               flex items-center justify-between px-4 py-3 rounded-xl transition-all
-              ${isActive 
-                ? 'bg-primary/10 text-primary font-medium' 
+              ${isActive
+                ? 'bg-primary/10 text-primary font-medium'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
             `}
           >
@@ -68,7 +70,7 @@ const Sidebar = () => {
             <p className="text-xs text-slate-500 truncate">{user?.role}</p>
           </div>
         </div>
-        <button 
+        <button
           onClick={logout}
           className="flex items-center gap-3 w-full px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
         >
