@@ -386,3 +386,29 @@ export const deleteLeadMock = async (id) => {
     }, 600);
   });
 };
+
+export const fetchSquadMembersMock = async (managerId) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const users = getMockUsers();
+      const squad = users
+        .filter(u => u.managerId === parseInt(managerId) && u.role === 'Executive')
+        .map(u => {
+          const leads = getMockLeads();
+          const assignedLeads = leads.filter(l => l.executiveId === u.id).length;
+          return { ...u, leadsCount: assignedLeads, managerName: users.find(m => m.id === parseInt(managerId))?.name };
+        });
+      resolve(squad);
+    }, 500);
+  });
+};
+
+export const fetchUserByIdMock = async (userId) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const users = getMockUsers();
+      const user = users.find(u => u.id === parseInt(userId));
+      resolve(user || null);
+    }, 400);
+  });
+};

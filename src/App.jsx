@@ -12,8 +12,8 @@ import ManagerLeads from './features/manager/pages/ManagerLeads';
 import Tasks from './features/executive/pages/Tasks';
 import Followups from './features/executive/pages/Followups';
 import Teams from './features/manager/pages/Teams';
-import Managers from './features/admin/pages/Managers';
-import Executives from './features/admin/pages/Executives';
+import Users from './features/admin/pages/Users';
+import SquadView from './features/admin/pages/SquadView';
 import { Eye, EyeOff } from 'lucide-react';
 import Notifications from './features/shared/pages/Notifications';
 
@@ -221,15 +221,15 @@ function App() {
                 </ProtectedWrapper>
               } />
 
-              <Route path="/managers" element={
+              <Route path="/users" element={
                 <ProtectedWrapper allowedRoles={['Admin']}>
-                  <Managers />
+                  <Users />
                 </ProtectedWrapper>
               } />
 
-              <Route path="/executives" element={
+              <Route path="/users/squad/:managerId" element={
                 <ProtectedWrapper allowedRoles={['Admin']}>
-                  <Executives />
+                  <SquadView />
                 </ProtectedWrapper>
               } />
 

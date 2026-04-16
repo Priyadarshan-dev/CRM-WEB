@@ -20,8 +20,9 @@ const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Admin', 'Manager'] },
     { name: 'Leads', icon: Users, path: '/leads', roles: ['Admin', 'Manager'] },
-    { name: 'Managers', icon: Shield, path: '/managers', roles: ['Admin'] },
-    { name: 'Executives', icon: Target, path: '/executives', roles: ['Admin'] },
+    { name:'Users',icon: Users, path: '/users', roles: ['Admin'] },
+    // { name: 'Managers', icon: Shield, path: '/managers', roles: ['Admin'] },
+    // { name: 'Executives', icon: Target, path: '/executives', roles: ['Admin'] },
     { name: 'Teams', icon: Target, path: '/teams', roles: ['Manager'] },
     { name: 'Followups', icon: Phone, path: '/followups', roles: ['Executive'] },
     { name: 'Daily Tasks', icon: ClipboardList, path: '/tasks', roles: ['Executive'] },
