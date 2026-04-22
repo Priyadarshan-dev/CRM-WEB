@@ -21,15 +21,17 @@ const queryClient = new QueryClient();
 
 const RoleBasedDashboard = () => {
   const { user } = useAuth();
-  if (user?.role === 'Admin') return <AdminDashboard />;
-  if (user?.role === 'Manager') return <ManagerDashboard />;
+  const role = user?.role?.toUpperCase();
+  if (role === 'ADMIN') return <AdminDashboard />;
+  if (role === 'MANAGER') return <ManagerDashboard />;
   return <Navigate to="/login" />;
 };
 
 const RoleBasedLeads = () => {
   const { user } = useAuth();
-  if (user?.role === 'Admin') return <AdminLeads />;
-  if (user?.role === 'Manager') return <ManagerLeads />;
+  const role = user?.role?.toUpperCase();
+  if (role === 'ADMIN') return <AdminLeads />;
+  if (role === 'MANAGER') return <ManagerLeads />;
   return <Navigate to="/login" />;
 };
 
@@ -39,7 +41,8 @@ const Home = () => {
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
   
-  if (user.role === 'Executive') {
+  const role = user.role?.toUpperCase();
+  if (role === 'EXECUTIVE') {
     return <Navigate to="/tasks" replace />;
   }
   
@@ -58,7 +61,8 @@ const Login = () => {
 
   React.useEffect(() => {
     if (user) {
-      if (user.role === 'Executive') {
+      const role = user.role?.toUpperCase();
+      if (role === 'EXECUTIVE') {
         navigate('/tasks', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });

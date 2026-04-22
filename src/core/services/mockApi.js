@@ -2,16 +2,16 @@
 import { pushNotification } from '../context/NotificationContext';
 
 const INITIAL_USERS = [
-  { id: 1, name: 'Super Admin', role: 'Admin', email: 'admin@crm.com', password: 'password123' },
-  { id: 2, name: 'Sarah Team-Lead', role: 'Manager', email: 'sarah@crm.com', password: 'password123', teamId: 'A' },
-  { id: 3, name: 'Mike Sales-Lead', role: 'Manager', email: 'mike@crm.com', password: 'password123', teamId: 'B' },
-  { id: 4, name: 'John Sales-Exec', role: 'Executive', email: 'john@crm.com', password: 'password123', managerId: 2 },
-  { id: 5, name: 'Emma Sales-Exec', role: 'Executive', email: 'emma@crm.com', password: 'password123', managerId: 2 },
-  { id: 6, name: 'David Sales-Exec', role: 'Executive', email: 'david@crm.com', password: 'password123', managerId: 3 },
+  { id: 1, name: 'Super Admin', role: 'ADMIN', email: 'admin@crm.com', password: 'password123' },
+  { id: 2, name: 'Sarah Team-Lead', role: 'MANAGER', email: 'sarah@crm.com', password: 'password123', teamId: 'A' },
+  { id: 3, name: 'Mike Sales-Lead', role: 'MANAGER', email: 'mike@crm.com', password: 'password123', teamId: 'B' },
+  { id: 4, name: 'John Sales-Exec', role: 'EXECUTIVE', email: 'john@crm.com', password: 'password123', managerId: 2 },
+  { id: 5, name: 'Emma Sales-Exec', role: 'EXECUTIVE', email: 'emma@crm.com', password: 'password123', managerId: 2 },
+  { id: 6, name: 'David Sales-Exec', role: 'EXECUTIVE', email: 'david@crm.com', password: 'password123', managerId: 3 },
   ...Array.from({ length: 15 }, (_, i) => ({
     id: i + 10,
     name: `Exec ${i + 1}`,
-    role: 'Executive',
+    role: 'EXECUTIVE',
     email: `exec${i + 1}@crm.com`,
     password: 'password123',
     managerId: 2 
@@ -156,22 +156,26 @@ export const fetchLeadsMock = async (user) => {
       if (!user) return resolve([]);
       const leads = getMockLeads();
       
-      if (user.role === 'Admin') {
+      const role = user.role?.toUpperCase();
+      if (role === 'ADMIN') {
         return resolve(leads);
       }
       
-      if (user.role === 'Manager') {
+      if (role === 'MANAGER') {
         const users = getMockUsers();
         const teamExecIds = users
           .filter(u => u.managerId === user.id)
           .map(u => u.id);
         
         return resolve(leads.filter(l => 
-          teamExecIds.includes(l.executiveId) || l.executiveId === user.id || l.assignedTo === 'Unassigned'
+          teamExecIds.includes(l.executiveId) || 
+          l.executiveId === user.id || 
+          l.managerId === user.id ||
+          (l.assignedTo === 'Unassigned' && !l.managerId)
         ));
       }
       
-      if (user.role === 'Executive') {
+      if (role === 'EXECUTIVE') {
         return resolve(leads.filter(l => l.executiveId === user.id));
       }
       
@@ -183,33 +187,76 @@ export const fetchLeadsMock = async (user) => {
 export const fetchStatsMock = async (user) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const baseStats = {
-        totalLeads: 1284,
-        conversions: 432,
-        closedWon: 128,
-        avgResponse: '2.4h',
-        trends: { leads: '+12%', conversions: '+8%', closed: '+15%', response: '-10%' }
-      };
-
-      if (user?.role === 'Manager') {
-        resolve({
-          ...baseStats,
-          totalLeads: 452,
-          conversions: 156,
-          closedWon: 42,
-          avgResponse: '1.8h',
-        });
-      } else if (user?.role === 'Executive') {
-        resolve({
-          ...baseStats,
-          totalLeads: 84,
-          conversions: 24,
-          closedWon: 8,
-          avgResponse: '0.5h',
-        });
-      } else {
-        resolve(baseStats);
+      if (!user) return resolve({});
+      
+      const leads = getMockLeads();
+      const users = getMockUsers();
+      
+      let filteredLeads = [];
+      const role = user.role?.toUpperCase();
+      
+      if (role === 'ADMIN') {
+        filteredLeads = leads;
+      } else if (role === 'MANAGER') {
+        const teamExecIds = users
+          .filter(u => u.managerId === user.id)
+          .map(u => u.id);
+        
+        filteredLeads = leads.filter(l => 
+          teamExecIds.includes(l.executiveId) || 
+          l.executiveId === user.id || 
+          l.managerId === user.id
+        );
+      } else if (role === 'EXECUTIVE') {
+        filteredLeads = leads.filter(l => l.executiveId === user.id);
       }
+
+      const totalLeads = filteredLeads.length;
+      const conversions = filteredLeads.filter(l => l.status === 'Qualified').length;
+      const pendingTasks = filteredLeads.filter(l => l.status === 'New' || l.status === 'Pending').length;
+      const rate = totalLeads > 0 ? ((conversions / totalLeads) * 100).toFixed(1) : 0;
+
+      // Calculate daily performance for the last 7 days
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+      }
+
+      const dailyStats = days.map(day => {
+        const dayLeads = filteredLeads.filter(l => l.date === day);
+        return {
+          day: day.split(',')[0], // e.g., "Oct 24"
+          total: dayLeads.length,
+          converted: dayLeads.filter(l => l.status === 'Qualified').length
+        };
+      });
+
+      // Calculate lead source distribution
+      const sourceCounts = filteredLeads.reduce((acc, l) => {
+        const source = l.source || 'Other';
+        acc[source] = (acc[source] || 0) + 1;
+        return acc;
+      }, {});
+
+      const leadSources = Object.entries(sourceCounts)
+        .map(([source, count]) => ({
+          source,
+          percentage: totalLeads > 0 ? Math.round((count / totalLeads) * 100) : 0
+        }))
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, 5);
+
+      resolve({
+        totalLeads,
+        conversions,
+        pendingTasks,
+        conversionRate: `${rate}%`,
+        dailyStats,
+        leadSources,
+        trends: { leads: '+12%', conversions: '+8%', tasks: '-5%', rate: '+3%' }
+      });
     }, 400);
   });
 };
@@ -242,7 +289,8 @@ export const fetchTeamHierarchyMock = async (user) => {
           leads: leads.filter(l => l.executiveId === u.id).length
         }));
 
-      if (directReports.length > 0 && user?.role === 'Admin') {
+      const role = user?.role?.toUpperCase();
+      if (directReports.length > 0 && role === 'ADMIN') {
         hierarchy.unshift({
           manager: 'Super Admin (Direct Reports)',
           managerId: 1,
@@ -251,7 +299,7 @@ export const fetchTeamHierarchyMock = async (user) => {
         });
       }
 
-      if (user?.role === 'Manager') {
+      if (role === 'MANAGER') {
         resolve(hierarchy.filter(t => t.managerId === user.id));
       } else {
         resolve(hierarchy);
@@ -264,9 +312,9 @@ export const fetchUsersByRoleMock = async (role) => {
     setTimeout(() => {
       const users = getMockUsers();
       const filtered = users
-        .filter(u => u.role === role)
+        .filter(u => u.role?.toUpperCase() === role?.toUpperCase())
         .map(u => {
-          if (role === 'Executive') {
+          if (role?.toUpperCase() === 'EXECUTIVE') {
             const manager = users.find(m => m.id === u.managerId);
             return { ...u, managerName: manager ? manager.name : 'Direct Report' };
           }
@@ -282,7 +330,7 @@ export const fetchManagersShortMock = async () => {
     setTimeout(() => {
       const users = getMockUsers();
       const managers = users
-        .filter(u => u.role === 'Manager')
+        .filter(u => u.role?.toUpperCase() === 'MANAGER')
         .map(u => ({ id: u.id, name: u.name }));
       resolve(managers);
     }, 400);
@@ -392,7 +440,7 @@ export const fetchSquadMembersMock = async (managerId) => {
     setTimeout(() => {
       const users = getMockUsers();
       const squad = users
-        .filter(u => u.managerId === parseInt(managerId) && u.role === 'Executive')
+        .filter(u => u.managerId === parseInt(managerId) && u.role?.toUpperCase() === 'EXECUTIVE')
         .map(u => {
           const leads = getMockLeads();
           const assignedLeads = leads.filter(l => l.executiveId === u.id).length;

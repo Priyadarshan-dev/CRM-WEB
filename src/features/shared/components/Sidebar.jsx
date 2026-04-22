@@ -30,7 +30,10 @@ const Sidebar = () => {
     { name: 'Settings', icon: Settings, path: '/settings', roles: ['Admin'] },
   ];
 
-  const filteredNavItems = navItems.filter(item => item.roles.includes(user?.role));
+  const userRole = user?.role?.toUpperCase();
+  const filteredNavItems = navItems.filter(item => 
+    item.roles.some(role => role.toUpperCase() === userRole)
+  );
 
   return (
     <aside className="w-64 h-screen bg-white border-r border-slate-200 flex flex-col sticky top-0">

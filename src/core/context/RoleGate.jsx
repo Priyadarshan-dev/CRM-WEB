@@ -9,7 +9,7 @@ export const RoleGate = ({ allowedRoles, children }) => {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !allowedRoles.some(role => role.toUpperCase() === user.role?.toUpperCase())) {
     return (
       <div className="flex flex-col h-screen items-center justify-center p-6 text-center">
         <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>

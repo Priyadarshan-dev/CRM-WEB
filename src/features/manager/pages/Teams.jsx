@@ -309,7 +309,7 @@ const Teams = () => {
   const [isCreating, setIsCreating] = React.useState(false);
   
   // New State for Role Selection (Admin only)
-  const [newUserRole, setNewUserRole] = React.useState('Manager');
+  const [newUserRole, setNewUserRole] = React.useState('MANAGER');
   const [selectedManagerId, setSelectedManagerId] = React.useState('direct');
 
   // Pagination states
@@ -327,21 +327,21 @@ const Teams = () => {
   const { data: managers } = useQuery({
     queryKey: ['managers-list'],
     queryFn: fetchManagersShortMock,
-    enabled: user?.role === 'Admin' && isModalOpen,
+    enabled: user?.role?.toUpperCase() === 'ADMIN' && isModalOpen,
   });
 
   // Fetch leads for assignment (Manager only)
   const { data: allLeads } = useQuery({
     queryKey: ['leads', user?.id],
     queryFn: () => fetchLeadsMock(user),
-    enabled: !!user && user.role === 'Manager',
+    enabled: !!user && user.role?.toUpperCase() === 'MANAGER',
   });
 
   // Fetch executives for assignment dropdown (Manager only)
   const { data: allExecutives } = useQuery({
     queryKey: ['executives'],
-    queryFn: () => fetchUsersByRoleMock('Executive'),
-    enabled: !!user && user.role === 'Manager',
+    queryFn: () => fetchUsersByRoleMock('EXECUTIVE'),
+    enabled: !!user && user.role?.toUpperCase() === 'MANAGER',
   });
 
   // Filter executives belonging to this manager
@@ -375,8 +375,8 @@ const Teams = () => {
 
 
   React.useEffect(() => {
-    if (user?.role === 'Manager') {
-      setNewUserRole('Executive');
+    if (user?.role?.toUpperCase() === 'MANAGER') {
+      setNewUserRole('EXECUTIVE');
     }
   }, [user]);
 
@@ -384,9 +384,10 @@ const Teams = () => {
     e.preventDefault();
     setIsCreating(true);
     
-    const managerId = user.role === 'Manager' 
+    const userRole = user.role?.toUpperCase();
+    const managerId = userRole === 'MANAGER' 
       ? user.id 
-      : (newUserRole === 'Executive' 
+      : (newUserRole === 'EXECUTIVE' 
           ? (selectedManagerId === 'direct' ? null : parseInt(selectedManagerId)) 
           : null);
     
@@ -396,7 +397,7 @@ const Teams = () => {
       role: newUserRole,
       password: newPassword,
       managerId: managerId,
-      teamId: user.role === 'Admin' && newUserRole === 'Manager' ? 'NEW' : user.teamId
+      teamId: user.role?.toUpperCase() === 'ADMIN' && newUserRole === 'MANAGER' ? 'NEW' : user.teamId
     });
 
     setIsCreating(false);
@@ -416,7 +417,8 @@ const Teams = () => {
     );
   }
 
-  const isManager = user?.role === 'Manager';
+  const userRole = user?.role?.toUpperCase();
+  const isManager = userRole === 'MANAGER';
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -425,7 +427,7 @@ const Teams = () => {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Teams & Hierarchy</h1>
           <p className="text-slate-500 text-sm mt-1">
-            {user?.role === 'Admin' 
+            {userRole === 'ADMIN' 
               ? 'Oversee all sales teams and their organizational structure.' 
               : `Manage your sales executives and territory assignments.`}
           </p>
@@ -450,13 +452,13 @@ const Teams = () => {
 
 
           {/* Add Executive button — only visible on My Team tab */}
-          {(user?.role === 'Admin' || user?.role === 'Manager') && activeTab === 'teams' && (
+          {(userRole === 'ADMIN' || userRole === 'MANAGER') && activeTab === 'teams' && (
             <button 
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl font-bold hover:bg-primary transition-all shadow-lg shadow-black/10 group"
             >
               <UserPlus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              {user?.role === 'Admin' ? 'Add New User' : 'Add New Executive'}
+              {userRole === 'ADMIN' ? 'Add New User' : 'Add New Executive'}
             </button>
           )}
         </div>
@@ -672,14 +674,14 @@ const Teams = () => {
             <div className="flex items-center justify-between border-b border-slate-100 pb-5">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">
-                  {user.role === 'Admin' ? 'Create New User' : 'Create New Executive'}
+                  {userRole === 'ADMIN' ? 'Create New User' : 'Create New Executive'}
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">Fill in the credentials for the new team member.</p>
               </div>
               <button 
                 onClick={() => {
                   setIsModalOpen(false);
-                  setNewUserRole(user.role === 'Admin' ? 'Manager' : 'Executive');
+                  setNewUserRole(userRole === 'ADMIN' ? 'MANAGER' : 'EXECUTIVE');
                 }} 
                 className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
               >
@@ -688,21 +690,21 @@ const Teams = () => {
             </div>
             
             <form onSubmit={handleCreateUser} className="space-y-4">
-              {user.role === 'Admin' && (
+              {userRole === 'ADMIN' && (
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Assign Role</label>
                   <div className="flex p-1 bg-slate-100 rounded-2xl">
                     <button
                       type="button"
-                      onClick={() => setNewUserRole('Manager')}
-                      className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${newUserRole === 'Manager' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      onClick={() => setNewUserRole('MANAGER')}
+                      className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${newUserRole === 'MANAGER' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       Manager
                     </button>
                     <button
                       type="button"
-                      onClick={() => setNewUserRole('Executive')}
-                      className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${newUserRole === 'Executive' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      onClick={() => setNewUserRole('EXECUTIVE')}
+                      className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${newUserRole === 'EXECUTIVE' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       Executive
                     </button>
@@ -710,7 +712,7 @@ const Teams = () => {
                 </div>
               )}
 
-              {user.role === 'Admin' && newUserRole === 'Executive' && (
+              {userRole === 'ADMIN' && newUserRole === 'EXECUTIVE' && (
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Assign to Manager</label>
                   <div className="relative">

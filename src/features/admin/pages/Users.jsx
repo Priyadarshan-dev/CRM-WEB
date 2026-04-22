@@ -27,7 +27,7 @@ const UserRow = ({ id, name, email, role, managerName, onManageSquad }) => (
   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-primary/30 hover:shadow-md transition-all group flex items-center justify-between gap-4">
     <div className="flex items-center gap-4 flex-1 min-w-0">
       <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center font-bold text-lg transition-colors ${
-        role === 'Manager' ? 'bg-purple-100 text-purple-600 group-hover:bg-primary/10 group-hover:text-primary' : 'bg-primary/10 text-primary'
+        role?.toUpperCase() === 'MANAGER' ? 'bg-purple-100 text-purple-600 group-hover:bg-primary/10 group-hover:text-primary' : 'bg-primary/10 text-primary'
       }`}>
         {name.charAt(0)}
       </div>
@@ -42,20 +42,20 @@ const UserRow = ({ id, name, email, role, managerName, onManageSquad }) => (
 
     <div className="hidden md:flex flex-col items-center gap-1 px-4 border-x border-slate-100 min-w-[140px]">
       <div className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-        role === 'Manager' 
+        role?.toUpperCase() === 'MANAGER' 
           ? 'bg-purple-50 text-purple-600 border-purple-100' 
           : (managerName === 'Direct Report' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-500 border-slate-100')
       }`}>
-        {role === 'Manager' ? 'TEAM LEADER' : 'EXECUTIVE'}
+        {role?.toUpperCase() === 'MANAGER' ? 'TEAM LEADER' : 'EXECUTIVE'}
       </div>
     </div>
 
     <div className="hidden sm:flex flex-col flex-1 min-w-[150px]">
       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
-        {role === 'Manager' ? 'Assigned' : 'Reporting To'}
+        {role?.toUpperCase() === 'MANAGER' ? 'Assigned' : 'Reporting To'}
       </p>
       <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-        {role === 'Manager' ? (
+        {role?.toUpperCase() === 'MANAGER' ? (
           <span className="text-purple-600">Active Squad</span>
         ) : (
           <>
@@ -68,10 +68,10 @@ const UserRow = ({ id, name, email, role, managerName, onManageSquad }) => (
     
     <div className="flex items-center gap-3">
       <button 
-        onClick={() => role === 'Manager' && onManageSquad(id)}
+        onClick={() => role?.toUpperCase() === 'MANAGER' && onManageSquad(id)}
         className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl text-xs font-bold text-slate-600 hover:bg-primary hover:text-white transition-all group/btn whitespace-nowrap"
       >
-        {role === 'Manager' ? 'Manage Squad' : 'View Performance'}
+        {role?.toUpperCase() === 'MANAGER' ? 'Manage Squad' : 'View Performance'}
         <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
       </button>
     </div>
@@ -82,7 +82,7 @@ const Users = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = React.useState('Manager'); // 'Manager' or 'Executive'
+  const [activeTab, setActiveTab] = React.useState('MANAGER'); // 'MANAGER' or 'EXECUTIVE'
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   
   // Modal State
@@ -90,35 +90,35 @@ const Users = () => {
     name: '',
     email: '',
     password: '',
-    role: 'Manager',
+    role: 'MANAGER',
     managerId: 'direct'
   });
   const [showPassword, setShowPassword] = React.useState(false);
 
   // Queries
   const { data: managers, isLoading: loadingManagers } = useQuery({
-    queryKey: ['users', 'Manager'],
-    queryFn: () => fetchUsersByRoleMock('Manager'),
+    queryKey: ['users', 'MANAGER'],
+    queryFn: () => fetchUsersByRoleMock('MANAGER'),
     enabled: !!user,
   });
 
   const { data: executives, isLoading: loadingExecutives } = useQuery({
-    queryKey: ['users', 'Executive'],
-    queryFn: () => fetchUsersByRoleMock('Executive'),
+    queryKey: ['users', 'EXECUTIVE'],
+    queryFn: () => fetchUsersByRoleMock('EXECUTIVE'),
     enabled: !!user,
   });
 
   const { data: managersList } = useQuery({
     queryKey: ['managers-short-list'],
     queryFn: fetchManagersShortMock,
-    enabled: isModalOpen && formData.role === 'Executive',
+    enabled: isModalOpen && formData.role === 'EXECUTIVE',
   });
 
   // Mutations
   const createMutation = useMutation({
     mutationFn: (userData) => {
       const finalData = { ...userData };
-      if (userData.role === 'Executive') {
+      if (userData.role === 'EXECUTIVE') {
         finalData.managerId = userData.managerId === 'direct' ? null : parseInt(userData.managerId);
       } else {
         finalData.teamId = 'NEW';
@@ -157,8 +157,8 @@ const Users = () => {
     navigate(`/users/squad/${managerId}`);
   };
 
-  const displayUsers = activeTab === 'Manager' ? managers : executives;
-  const isLoading = activeTab === 'Manager' ? loadingManagers : loadingExecutives;
+  const displayUsers = activeTab === 'MANAGER' ? managers : executives;
+  const isLoading = activeTab === 'MANAGER' ? loadingManagers : loadingExecutives;
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
@@ -180,8 +180,8 @@ const Users = () => {
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl w-fit">
         {[
-          { id: 'Manager', label: 'Managers', icon: Shield },
-          { id: 'Executive', label: 'Executives', icon: Target }
+          { id: 'MANAGER', label: 'Managers', icon: Shield },
+          { id: 'EXECUTIVE', label: 'Executives', icon: Target }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -243,7 +243,7 @@ const Users = () => {
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">User Role</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {['Manager', 'Executive'].map((role) => (
+                  {['MANAGER', 'EXECUTIVE'].map((role) => (
                     <button
                       key={role}
                       type="button"
@@ -254,14 +254,14 @@ const Users = () => {
                           : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
                       }`}
                     >
-                      {role}
+                      {role.charAt(0) + role.slice(1).toLowerCase()}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Conditional Reporting To (only for Executive) */}
-              {formData.role === 'Executive' && (
+              {formData.role === 'EXECUTIVE' && (
                 <div className="space-y-1 animate-in slide-in-from-top-2 duration-300">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Reporting To</label>
                   <div className="relative">

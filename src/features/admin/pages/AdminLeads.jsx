@@ -14,6 +14,7 @@ import {
   Globe,
   Briefcase,
   Phone,
+  Shield,
   Upload,
   FileText,
   AlertCircle,
@@ -21,7 +22,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { fetchLeadsMock, createLeadMock, bulkCreateLeadsMock, updateLeadMock, deleteLeadMock } from '../../../core/services/mockApi';
+import { fetchLeadsMock, createLeadMock, bulkCreateLeadsMock, updateLeadMock, deleteLeadMock, fetchManagersShortMock } from '../../../core/services/mockApi';
 import { useAuth } from '../../../core/context/AuthContext';
 
 // ─── Import Leads Modal ──────────────────────────────────────────────────────
@@ -276,11 +277,15 @@ const Leads = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
   const [leadForm, setLeadForm] = React.useState({
-    name: '',
-    email: '',
-    phone: '',
     source: 'Website',
-    status: 'New'
+    status: 'New',
+    managerId: ''
+  });
+
+  // Fetch managers for the dropdown
+  const { data: managers } = useQuery({
+    queryKey: ['managers-list-short'],
+    queryFn: fetchManagersShortMock,
   });
 
   // Menu State
@@ -310,7 +315,7 @@ const Leads = () => {
       queryClient.invalidateQueries(['leads']);
       setIsModalOpen(false);
       setIsEditing(false);
-      setLeadForm({ name: '', email: '', phone: '', source: 'Website', status: 'New' });
+      setLeadForm({ name: '', email: '', phone: '', source: 'Website', status: 'New', managerId: '' });
     }
   });
 
@@ -320,7 +325,7 @@ const Leads = () => {
       queryClient.invalidateQueries(['leads']);
       setIsModalOpen(false);
       setIsEditing(false);
-      setLeadForm({ name: '', email: '', phone: '', source: 'Website', status: 'New' });
+      setLeadForm({ name: '', email: '', phone: '', source: 'Website', status: 'New', managerId: '' });
     }
   });
 
@@ -397,7 +402,7 @@ const Leads = () => {
 
   const openAddModal = () => {
     setIsEditing(false);
-    setLeadForm({ name: '', email: '', phone: '', source: 'Website', status: 'New' });
+    setLeadForm({ name: '', email: '', phone: '', source: 'Website', status: 'New', managerId: '' });
     setIsModalOpen(true);
   };
 
@@ -694,6 +699,25 @@ const Leads = () => {
                       <option value="Contacted">Contacted</option>
                       <option value="Qualified">Qualified</option>
                       <option value="Pending">Pending</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Assign to Manager</label>
+                  <div className="relative">
+                    <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <select
+                      value={leadForm.managerId || ''}
+                      onChange={(e) => setLeadForm({...leadForm, managerId: e.target.value})}
+                      className="w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-[20px] focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all text-sm bg-white cursor-pointer appearance-none"
+                    >
+                      <option value="">None (Unassigned)</option>
+                      {managers?.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
