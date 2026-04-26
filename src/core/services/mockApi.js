@@ -1,5 +1,5 @@
 // src/services/mockApi.js
-import { pushNotification } from '../context/NotificationContext';
+// import { pushNotification } from '../context/NotificationContext'; // Removed as it's a client-side context
 
 const INITIAL_USERS = [
   { id: 1, name: 'Super Admin', role: 'ADMIN', email: 'admin@crm.com', password: 'password123' },
@@ -150,36 +150,46 @@ export const createLeadMock = async (leadData) => {
   });
 };
 
-export const fetchLeadsMock = async (user) => {
+export const fetchLeadsMock = async (user, page = 0, size = 10, executiveId = null) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      if (!user) return resolve([]);
+      if (!user) return resolve({ content: [], totalPages: 0, totalElements: 0 });
       const leads = getMockLeads();
       
       const role = user.role?.toUpperCase();
+      let filtered = [];
       if (role === 'ADMIN') {
-        return resolve(leads);
-      }
-      
-      if (role === 'MANAGER') {
+        if (executiveId) {
+          filtered = leads.filter(l => l.executiveId === Number(executiveId));
+        } else {
+          filtered = leads;
+        }
+      } else if (role === 'MANAGER') {
         const users = getMockUsers();
         const teamExecIds = users
           .filter(u => u.managerId === user.id)
           .map(u => u.id);
         
-        return resolve(leads.filter(l => 
+        filtered = leads.filter(l => 
           teamExecIds.includes(l.executiveId) || 
           l.executiveId === user.id || 
           l.managerId === user.id ||
           (l.assignedTo === 'Unassigned' && !l.managerId)
-        ));
+        );
+      } else if (role === 'EXECUTIVE') {
+        filtered = leads.filter(l => l.executiveId === user.id);
       }
       
-      if (role === 'EXECUTIVE') {
-        return resolve(leads.filter(l => l.executiveId === user.id));
-      }
+      const start = page * size;
+      const content = filtered.slice(start, start + size);
       
-      resolve([]);
+      resolve({
+        content,
+        totalPages: Math.ceil(filtered.length / size),
+        totalElements: filtered.length,
+        number: page,
+        size: size
+      });
     }, 600);
   });
 };
@@ -307,7 +317,7 @@ export const fetchTeamHierarchyMock = async (user) => {
     }, 500);
   });
 };
-export const fetchUsersByRoleMock = async (role) => {
+export const fetchUsersByRoleMock = async (role, page = 0, size = 10) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const users = getMockUsers();
@@ -320,7 +330,17 @@ export const fetchUsersByRoleMock = async (role) => {
           }
           return u;
         });
-      resolve(filtered);
+
+      const start = page * size;
+      const content = filtered.slice(start, start + size);
+
+      resolve({
+        content,
+        totalPages: Math.ceil(filtered.length / size),
+        totalElements: filtered.length,
+        number: page,
+        size: size
+      });
     }, 500);
   });
 };
@@ -435,7 +455,7 @@ export const deleteLeadMock = async (id) => {
   });
 };
 
-export const fetchSquadMembersMock = async (managerId) => {
+export const fetchSquadMembersMock = async (managerId, page = 0, size = 10) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const users = getMockUsers();
@@ -446,7 +466,17 @@ export const fetchSquadMembersMock = async (managerId) => {
           const assignedLeads = leads.filter(l => l.executiveId === u.id).length;
           return { ...u, leadsCount: assignedLeads, managerName: users.find(m => m.id === parseInt(managerId))?.name };
         });
-      resolve(squad);
+
+      const start = page * size;
+      const content = squad.slice(start, start + size);
+
+      resolve({
+        content,
+        totalPages: Math.ceil(squad.length / size),
+        totalElements: squad.length,
+        number: page,
+        size: size
+      });
     }, 500);
   });
 };

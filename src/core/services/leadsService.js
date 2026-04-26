@@ -1,9 +1,11 @@
 import api from './api';
 
-export const fetchLeads = async () => {
-  const response = await api.get('/leads');
-  // Backend returns Page<T>, we need the content array
-  return response.data.content || response.data;
+export const fetchLeads = async (page = 0, size = 10, executiveId = null, unassignedOnly = false) => {
+  const params = { page, size };
+  if (executiveId) params.executiveId = executiveId;
+  if (unassignedOnly) params.unassignedOnly = true;
+  const response = await api.get('/leads', { params });
+  return response.data;
 };
 
 export const createLead = async (data) => {

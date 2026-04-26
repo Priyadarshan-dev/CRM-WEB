@@ -25,10 +25,17 @@ const SquadView = () => {
     },
   });
 
-  const { data: squad, isLoading: loadingSquad } = useQuery({
-    queryKey: ['squad', managerId],
-    queryFn: () => fetchSquadMembers(managerId),
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
+
+  const { data: squadData, isLoading: loadingSquad } = useQuery({
+    queryKey: ['squad', managerId, currentPage],
+    queryFn: () => fetchSquadMembers(managerId, currentPage - 1, itemsPerPage),
   });
+
+  const squad = squadData?.content || [];
+  const totalPages = squadData?.totalPages || 0;
+  const totalElements = squadData?.totalElements || 0;
 
   if (loadingManager || loadingSquad) {
     return (
@@ -58,7 +65,7 @@ const SquadView = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-slate-900">{manager?.name}'s Squad</h1>
-                <p className="text-slate-500 font-medium">Managing {squad?.length || 0} Executives</p>
+                <p className="text-slate-500 font-medium">Managing {totalElements} Executives</p>
               </div>
             </div>
           </div>
@@ -123,6 +130,25 @@ const SquadView = () => {
             <div className="py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
               <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500 font-medium">No executives found in this squad.</p>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold transition-all ${
+                    currentPage === page
+                      ? 'bg-primary text-white shadow-md shadow-primary/20 scale-110'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-primary/50 hover:text-primary hover:bg-primary/5'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
             </div>
           )}
         </div>

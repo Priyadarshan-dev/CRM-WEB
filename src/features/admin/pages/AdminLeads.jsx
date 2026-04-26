@@ -27,9 +27,10 @@ import { fetchManagersShort } from '../../../core/services/userService';
 import { useAuth } from '../../../core/context/AuthContext';
 
 // ─── Import Leads Modal ──────────────────────────────────────────────────────
-const ImportLeadsModal = ({ onClose, onImport, isImporting }) => {
+const ImportLeadsModal = ({ onClose, onImport, isImporting, managers }) => {
   const [csvData, setCsvData] = React.useState(null);
   const [error, setError] = React.useState('');
+  const [selectedManagerId, setSelectedManagerId] = React.useState('');
   const [isDragging, setIsDragging] = React.useState(false);
   const [importDone, setImportDone] = React.useState(false);
   const fileInputRef = React.useRef(null);
@@ -74,7 +75,14 @@ const ImportLeadsModal = ({ onClose, onImport, isImporting }) => {
 
   const handleConfirm = async () => {
     if (!csvData) return;
-    await onImport(csvData.rows);
+    
+    // Attach selected managerId to each row
+    const enrichedRows = csvData.rows.map(row => ({
+      ...row,
+      managerId: selectedManagerId || null
+    }));
+
+    await onImport(enrichedRows);
     setImportDone(true);
   };
 
@@ -171,6 +179,24 @@ const ImportLeadsModal = ({ onClose, onImport, isImporting }) => {
                       ))}
                     </div>
                     <p className="text-[11px] text-slate-400 mt-3">Columns marked <span className="text-red-400 font-bold">*</span> are required. Others default to safe values if missing.</p>
+                  </div>
+
+                  {/* Assign to Manager Dropdown */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Assign all to Manager</label>
+                    <div className="relative">
+                      <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <select
+                        value={selectedManagerId}
+                        onChange={(e) => setSelectedManagerId(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-[20px] focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/30 transition-all text-sm bg-white cursor-pointer appearance-none"
+                      >
+                        <option value="">None (Keep Unassigned)</option>
+                        {managers?.map(m => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </>
               )}
@@ -305,10 +331,14 @@ const Leads = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const { data: leads, isLoading } = useQuery({
-    queryKey: ['leads'],
-    queryFn: fetchLeads,
+  const { data, isLoading } = useQuery({
+    queryKey: ['leads', currentPage, assignmentFilter],
+    queryFn: () => fetchLeads(currentPage - 1, itemsPerPage, null, assignmentFilter === 'Unassigned'),
   });
+
+  const leads = data?.content || [];
+  const totalElements = data?.totalElements || 0;
+  const totalPages = data?.totalPages || 0;
 
   const createMutation = useMutation({
     mutationFn: createLead,
@@ -355,18 +385,14 @@ const Leads = () => {
       
       const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
       
-      const isUnassigned = !lead.assignedToName || lead.assignedToName === 'Unassigned';
+      const isUnassigned = !lead.assignedToName || lead.assignedToName === 'Unassigned' || (!lead.managerId && !lead.executiveId);
       const matchesAssignment = assignmentFilter === 'All' || (assignmentFilter === 'Unassigned' && isUnassigned);
       
       return matchesSearch && matchesStatus && matchesAssignment;
     });
   }, [leads, searchQuery, statusFilter, assignmentFilter]);
 
-  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
-  const paginatedLeads = React.useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredLeads.slice(start, start + itemsPerPage);
-  }, [filteredLeads, currentPage]);
+  const paginatedLeads = filteredLeads;
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -489,7 +515,7 @@ const Leads = () => {
               </select>
             </div>
             <div className="text-sm text-slate-400 font-medium px-2">
-              {filteredLeads.length} total leads
+              {totalElements} total leads
             </div>
           </div>
         </div>
@@ -774,6 +800,7 @@ const Leads = () => {
           onClose={() => setIsImportModalOpen(false)}
           onImport={(rows) => bulkImportMutation.mutateAsync(rows)}
           isImporting={bulkImportMutation.isPending}
+          managers={managers}
         />
       )}
     </div>

@@ -1,8 +1,8 @@
 import api from './api';
 
-export const fetchUsersByRole = async (role) => {
-  const response = await api.get(`/users/role/${role}`);
-  return response.data.content || response.data;
+export const fetchUsersByRole = async (role, page = 0, size = 10) => {
+  const response = await api.get(`/users/role/${role}`, { params: { page, size } });
+  return response.data;
 };
 
 export const fetchManagersShort = async () => {
@@ -10,9 +10,9 @@ export const fetchManagersShort = async () => {
   return response.data;
 };
 
-export const fetchSquadMembers = async (managerId) => {
-  const response = await api.get(`/users/squad/${managerId}`);
-  return response.data.content || response.data;
+export const fetchSquadMembers = async (managerId, page = 0, size = 10) => {
+  const response = await api.get(`/users/squad/${managerId}`, { params: { page, size } });
+  return response.data;
 };
 
 export const fetchTeamHierarchy = async () => {
@@ -30,9 +30,9 @@ export const createExecutive = async (data) => {
   return response.data;
 };
 
-export const fetchMyExecutives = async () => {
-  const response = await api.get('/users/my-executives');
-  return response.data.content || response.data;
+export const fetchMyExecutives = async (page = 0, size = 10) => {
+  const response = await api.get('/users/my-executives', { params: { page, size } });
+  return response.data;
 };
 
 export const updateUser = async (id, data) => {

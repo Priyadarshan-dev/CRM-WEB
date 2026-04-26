@@ -98,12 +98,16 @@ const Followups = () => {
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = React.useState(1);
   
-  const { data: myLeads, isLoading } = useQuery({
-    queryKey: ['leads', 'followups', user?.id],
-    queryFn: fetchLeads,
+  const { data, isLoading } = useQuery({
+    queryKey: ['leads', 'followups', user?.id, currentPage],
+    queryFn: () => fetchLeads(currentPage - 1, itemsPerPage),
     enabled: !!user,
     refetchInterval: 10000, 
   });
+
+  const myLeads = data?.content || [];
+  const totalLeads = data?.totalElements || 0;
+  const totalPages = data?.totalPages || 0;
 
   if (isLoading) {
     return (
@@ -113,15 +117,10 @@ const Followups = () => {
     );
   }
 
-  const totalLeads = myLeads?.length || 0;
   const newLeads = myLeads?.filter(l => l.status === 'New').length || 0;
   const contactedLeads = myLeads?.filter(l => l.status === 'Contacted').length || 0;
 
-  // Pagination logic
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(totalLeads / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedLeads = myLeads?.slice(startIndex, startIndex + itemsPerPage) || [];
+  const paginatedLeads = myLeads || [];
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

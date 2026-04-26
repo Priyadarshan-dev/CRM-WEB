@@ -298,10 +298,14 @@ const Leads = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const { data: leads, isLoading } = useQuery({
-    queryKey: ['leads'],
-    queryFn: fetchLeads,
+  const { data, isLoading } = useQuery({
+    queryKey: ['leads', currentPage],
+    queryFn: () => fetchLeads(currentPage - 1, itemsPerPage),
   });
+
+  const leads = data?.content || [];
+  const totalElements = data?.totalElements || 0;
+  const totalPages = data?.totalPages || 0;
 
   const createMutation = useMutation({
     mutationFn: createLead,
@@ -352,11 +356,7 @@ const Leads = () => {
     });
   }, [leads, searchQuery, statusFilter]);
 
-  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
-  const paginatedLeads = React.useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredLeads.slice(start, start + itemsPerPage);
-  }, [filteredLeads, currentPage]);
+  const paginatedLeads = filteredLeads;
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -462,7 +462,7 @@ const Leads = () => {
               </select>
             </div>
             <div className="text-sm text-slate-400 font-medium px-2">
-              {filteredLeads.length} total leads
+              {totalElements} total leads
             </div>
           </div>
         </div>

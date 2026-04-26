@@ -326,11 +326,11 @@ const Teams = () => {
     queryKey: ['teams', user?.id],
     queryFn: async () => {
       if (isManager) {
-        const myExecs = await fetchMyExecutives();
+        const data = await fetchMyExecutives();
         return [{
           manager: user.name,
           isOwnerTeam: true,
-          members: myExecs
+          members: data.content || data
         }];
       }
       return fetchTeamHierarchy();
@@ -346,11 +346,13 @@ const Teams = () => {
   });
 
   // Fetch leads for assignment (Manager only)
-  const { data: allLeads } = useQuery({
+  const { data: leadsData } = useQuery({
     queryKey: ['leads'],
-    queryFn: fetchLeads,
+    queryFn: () => fetchLeads(0, 100), // Fetch a larger set for assignment picker
     enabled: isManager,
   });
+
+  const allLeads = leadsData?.content || [];
 
   // My executives for assignment tab
   const myExecutives = React.useMemo(() => {

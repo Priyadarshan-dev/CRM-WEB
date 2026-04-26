@@ -28,7 +28,7 @@ import {
   deleteUser
 } from '../../../core/services/userService';
 
-const UserRow = ({ id, name, email, role, managerName, onManageSquad, onEdit, onDelete }) => (
+const UserRow = ({ id, name, email, role, managerName, onManageSquad, onViewExecutiveLeads, onEdit, onDelete }) => (
   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-primary/30 hover:shadow-md transition-all group flex items-center justify-between gap-4">
     <div className="flex items-center gap-4 flex-1 min-w-0">
       <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center font-bold text-lg transition-colors ${
@@ -73,7 +73,7 @@ const UserRow = ({ id, name, email, role, managerName, onManageSquad, onEdit, on
     
     <div className="flex items-center gap-3">
       <button 
-        onClick={() => role?.toUpperCase() === 'MANAGER' && onManageSquad(id)}
+        onClick={() => role?.toUpperCase() === 'MANAGER' ? onManageSquad(id) : onViewExecutiveLeads(id)}
         className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl text-xs font-bold text-slate-600 hover:bg-primary hover:text-white transition-all group/btn whitespace-nowrap"
       >
         {role?.toUpperCase() === 'MANAGER' ? 'Squad' : 'Stats'}
@@ -104,8 +104,9 @@ const Users = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = React.useState('MANAGER'); // 'MANAGER' or 'EXECUTIVE'
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  
   const [isEditing, setIsEditing] = React.useState(false);
   
   // Modal State
@@ -120,16 +121,16 @@ const Users = () => {
   const [showPassword, setShowPassword] = React.useState(false);
 
   // Queries
-  const { data: managers, isLoading: loadingManagers } = useQuery({
-    queryKey: ['users', 'MANAGER'],
-    queryFn: () => fetchUsersByRole('MANAGER'),
-    enabled: !!user,
+  const { data: managersData, isLoading: loadingManagers } = useQuery({
+    queryKey: ['users', 'MANAGER', currentPage],
+    queryFn: () => fetchUsersByRole('MANAGER', currentPage - 1, itemsPerPage),
+    enabled: !!user && activeTab === 'MANAGER',
   });
 
-  const { data: executives, isLoading: loadingExecutives } = useQuery({
-    queryKey: ['users', 'EXECUTIVE'],
-    queryFn: () => fetchUsersByRole('EXECUTIVE'),
-    enabled: !!user,
+  const { data: executivesData, isLoading: loadingExecutives } = useQuery({
+    queryKey: ['users', 'EXECUTIVE', currentPage],
+    queryFn: () => fetchUsersByRole('EXECUTIVE', currentPage - 1, itemsPerPage),
+    enabled: !!user && activeTab === 'EXECUTIVE',
   });
 
   const { data: managersList } = useQuery({
@@ -247,8 +248,19 @@ const Users = () => {
     navigate(`/users/squad/${managerId}`);
   };
 
-  const displayUsers = activeTab === 'MANAGER' ? managers : executives;
+  const handleViewExecutiveLeads = (executiveId) => {
+    navigate(`/users/executive-leads/${executiveId}`);
+  };
+
+  const currentData = activeTab === 'MANAGER' ? managersData : executivesData;
+  const displayUsers = currentData?.content || [];
+  const totalPages = currentData?.totalPages || 0;
   const isLoading = activeTab === 'MANAGER' ? loadingManagers : loadingExecutives;
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
@@ -275,7 +287,7 @@ const Users = () => {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
               activeTab === tab.id 
                 ? 'bg-white text-primary shadow-sm' 
@@ -294,11 +306,12 @@ const Users = () => {
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="space-y-3">
           {displayUsers?.map((u) => (
             <UserRow 
               key={u.id} 
               onManageSquad={handleManageSquad} 
+              onViewExecutiveLeads={handleViewExecutiveLeads}
               onEdit={handleEditClick}
               onDelete={handleDeleteClick}
               {...u} 
@@ -308,6 +321,25 @@ const Users = () => {
             <div className="py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
               <UsersIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500 font-medium">No {activeTab}s found.</p>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold transition-all ${
+                    currentPage === page
+                      ? 'bg-primary text-white shadow-md shadow-primary/20 scale-110'
+                      : 'bg-white text-slate-500 border border-slate-200 hover:border-primary/50 hover:text-primary hover:bg-primary/5'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
             </div>
           )}
         </div>

@@ -14,6 +14,7 @@ import Followups from './features/executive/pages/Followups';
 import Teams from './features/manager/pages/Teams';
 import Users from './features/admin/pages/Users';
 import SquadView from './features/admin/pages/SquadView';
+import ExecutiveLeadsView from './features/admin/pages/ExecutiveLeadsView';
 import { Eye, EyeOff } from 'lucide-react';
 import Notifications from './features/shared/pages/Notifications';
 
@@ -234,6 +235,12 @@ function App() {
               <Route path="/users/squad/:managerId" element={
                 <ProtectedWrapper allowedRoles={['Admin']}>
                   <SquadView />
+                </ProtectedWrapper>
+              } />
+
+              <Route path="/users/executive-leads/:executiveId" element={
+                <ProtectedWrapper allowedRoles={['Admin']}>
+                  <ExecutiveLeadsView />
                 </ProtectedWrapper>
               } />
 
