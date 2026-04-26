@@ -15,15 +15,20 @@ import {
   Target,
   ChevronDown,
   ShieldCheck,
-  Star
+  Star,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { 
-  fetchUsersByRoleMock, 
-  createUserMock, 
-  fetchManagersShortMock 
-} from '../../../core/services/mockApi';
+  fetchUsersByRole, 
+  createManager, 
+  createExecutive, 
+  fetchManagersShort,
+  updateUser,
+  deleteUser
+} from '../../../core/services/userService';
 
-const UserRow = ({ id, name, email, role, managerName, onManageSquad }) => (
+const UserRow = ({ id, name, email, role, managerName, onManageSquad, onEdit, onDelete }) => (
   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-primary/30 hover:shadow-md transition-all group flex items-center justify-between gap-4">
     <div className="flex items-center gap-4 flex-1 min-w-0">
       <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center font-bold text-lg transition-colors ${
@@ -71,8 +76,24 @@ const UserRow = ({ id, name, email, role, managerName, onManageSquad }) => (
         onClick={() => role?.toUpperCase() === 'MANAGER' && onManageSquad(id)}
         className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl text-xs font-bold text-slate-600 hover:bg-primary hover:text-white transition-all group/btn whitespace-nowrap"
       >
-        {role?.toUpperCase() === 'MANAGER' ? 'Manage Squad' : 'View Performance'}
+        {role?.toUpperCase() === 'MANAGER' ? 'Squad' : 'Stats'}
         <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
+      </button>
+
+      <button 
+        onClick={() => onEdit({ id, name, email, role, managerName })}
+        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
+        title="Edit User"
+      >
+        <Edit className="w-4 h-4" />
+      </button>
+
+      <button 
+        onClick={() => onDelete(id)}
+        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+        title="Delete User"
+      >
+        <Trash2 className="w-4 h-4" />
       </button>
     </div>
   </div>
@@ -85,8 +106,11 @@ const Users = () => {
   const [activeTab, setActiveTab] = React.useState('MANAGER'); // 'MANAGER' or 'EXECUTIVE'
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   
+  const [isEditing, setIsEditing] = React.useState(false);
+  
   // Modal State
   const [formData, setFormData] = React.useState({
+    id: null,
     name: '',
     email: '',
     password: '',
@@ -98,59 +122,125 @@ const Users = () => {
   // Queries
   const { data: managers, isLoading: loadingManagers } = useQuery({
     queryKey: ['users', 'MANAGER'],
-    queryFn: () => fetchUsersByRoleMock('MANAGER'),
+    queryFn: () => fetchUsersByRole('MANAGER'),
     enabled: !!user,
   });
 
   const { data: executives, isLoading: loadingExecutives } = useQuery({
     queryKey: ['users', 'EXECUTIVE'],
-    queryFn: () => fetchUsersByRoleMock('EXECUTIVE'),
+    queryFn: () => fetchUsersByRole('EXECUTIVE'),
     enabled: !!user,
   });
 
   const { data: managersList } = useQuery({
     queryKey: ['managers-short-list'],
-    queryFn: fetchManagersShortMock,
+    queryFn: fetchManagersShort,
     enabled: isModalOpen && formData.role === 'EXECUTIVE',
   });
 
   // Mutations
   const createMutation = useMutation({
     mutationFn: (userData) => {
-      const finalData = { ...userData };
-      if (userData.role === 'EXECUTIVE') {
-        finalData.managerId = userData.managerId === 'direct' ? null : parseInt(userData.managerId);
+      const finalData = { 
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+        role: userData.role,
+        adminId: user.id
+      };
+
+      if (userData.managerId && userData.managerId !== 'direct') {
+        finalData.managerId = parseInt(userData.managerId);
       } else {
-        finalData.teamId = 'NEW';
+        finalData.managerId = null;
       }
-      return createUserMock(finalData);
+      
+      if (userData.role === 'EXECUTIVE') {
+        return createExecutive(finalData);
+      } else {
+        return createManager(finalData);
+      }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries(['users', variables.role]);
       setIsModalOpen(false);
       resetForm();
+      alert('User created successfully!');
+    },
+    onError: (error) => {
+      alert('Error: ' + (error.response?.data?.message || error.message));
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => {
+      const finalData = { ...data };
+      if (finalData.managerId === 'direct') finalData.managerId = null;
+      return updateUser(id, finalData);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries(['users', activeTab]);
+      setIsModalOpen(false);
+      resetForm();
+      alert('User updated successfully!');
+    },
+    onError: (error) => {
+      alert('Error updating user: ' + (error.response?.data?.message || error.message));
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users', activeTab]);
+      alert('User deleted successfully!');
+    },
+    onError: (error) => {
+      alert('Error deleting user: ' + (error.response?.data?.message || error.message));
     }
   });
 
   const resetForm = () => {
     setFormData({
+      id: null,
       name: '',
       email: '',
       password: '',
-      role: activeTab, // Set default role based on current tab
+      role: activeTab,
       managerId: 'direct'
     });
     setShowPassword(false);
+    setIsEditing(false);
   };
 
   const handleCreateUser = (e) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    if (isEditing) {
+      updateMutation.mutate({ id: formData.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
   };
 
   const openAddModal = () => {
-    setFormData(prev => ({ ...prev, role: activeTab }));
+    resetForm();
     setIsModalOpen(true);
+  };
+
+  const handleEditClick = (user) => {
+    setFormData({
+      ...user,
+      password: '', // Don't show old password
+      managerId: user.managerId || 'direct'
+    });
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = (id) => {
+    if (window.confirm('Are you sure you want to permanently remove this user? All their data links will be adjusted.')) {
+      deleteMutation.mutate(id);
+    }
   };
 
   const handleManageSquad = (managerId) => {
@@ -209,6 +299,8 @@ const Users = () => {
             <UserRow 
               key={u.id} 
               onManageSquad={handleManageSquad} 
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
               {...u} 
             />
           ))}
@@ -227,8 +319,8 @@ const Users = () => {
           <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl p-8 space-y-6 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-100 pb-5">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Add New User</h2>
-                <p className="text-xs text-slate-500 mt-1">Create a new account for your team.</p>
+                <h2 className="text-xl font-bold text-slate-900">{isEditing ? 'Edit User' : 'Add New User'}</h2>
+                <p className="text-xs text-slate-500 mt-1">{isEditing ? 'Update team member information.' : 'Create a new account for your team.'}</p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)} 
@@ -331,11 +423,14 @@ const Users = () => {
               <div className="pt-4 border-t border-slate-50">
                 <button
                   type="submit"
-                  disabled={createMutation.isPending}
+                  disabled={createMutation.isPending || updateMutation.isPending}
                   className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-primary transition-all shadow-xl hover:shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {createMutation.isPending ? 'Processing...' : 'Create Account'}
+                  {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isEditing 
+                    ? (updateMutation.isPending ? 'Updating...' : 'Save Changes') 
+                    : (createMutation.isPending ? 'Processing...' : 'Create Account')
+                  }
                 </button>
               </div>
             </form>

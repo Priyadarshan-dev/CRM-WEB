@@ -8,7 +8,7 @@ import {
   Loader2,
   TrendingUp
 } from 'lucide-react';
-import { fetchStatsMock } from '../../../core/services/mockApi';
+import { fetchStats } from '../../../core/services/statsService';
 import { useAuth } from '../../../core/context/AuthContext';
 
 const StatCard = ({ title, value, change, icon: Icon, color }) => (
@@ -70,7 +70,7 @@ const Dashboard = () => {
   
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['stats', user?.id],
-    queryFn: () => fetchStatsMock(user),
+    queryFn: fetchStats,
     enabled: !!user,
   });
 

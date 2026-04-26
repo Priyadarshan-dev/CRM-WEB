@@ -22,7 +22,8 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { fetchLeadsMock, createLeadMock, bulkCreateLeadsMock, updateLeadMock, deleteLeadMock, fetchManagersShortMock } from '../../../core/services/mockApi';
+import { fetchLeads, createLead, bulkCreateLeads, updateLead, deleteLead } from '../../../core/services/leadsService';
+import { fetchManagersShort } from '../../../core/services/userService';
 import { useAuth } from '../../../core/context/AuthContext';
 
 // ─── Import Leads Modal ──────────────────────────────────────────────────────
@@ -270,6 +271,7 @@ const Leads = () => {
   // Search and Filter State
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('All');
+  const [assignmentFilter, setAssignmentFilter] = React.useState('Unassigned'); // Default to Unassigned as requested
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 10;
   
@@ -285,7 +287,7 @@ const Leads = () => {
   // Fetch managers for the dropdown
   const { data: managers } = useQuery({
     queryKey: ['managers-list-short'],
-    queryFn: fetchManagersShortMock,
+    queryFn: fetchManagersShort,
   });
 
   // Menu State
@@ -304,13 +306,12 @@ const Leads = () => {
   }, []);
 
   const { data: leads, isLoading } = useQuery({
-    queryKey: ['leads', user?.id],
-    queryFn: () => fetchLeadsMock(user),
-    enabled: !!user,
+    queryKey: ['leads'],
+    queryFn: fetchLeads,
   });
 
   const createMutation = useMutation({
-    mutationFn: createLeadMock,
+    mutationFn: createLead,
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       setIsModalOpen(false);
@@ -320,7 +321,7 @@ const Leads = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => updateLeadMock(id, data),
+    mutationFn: ({ id, data }) => updateLead(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       setIsModalOpen(false);
@@ -330,7 +331,7 @@ const Leads = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteLeadMock,
+    mutationFn: deleteLead,
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       setActiveMenuLeadId(null);
@@ -338,10 +339,11 @@ const Leads = () => {
   });
 
   const bulkImportMutation = useMutation({
-    mutationFn: bulkCreateLeadsMock,
+    mutationFn: bulkCreateLeads,
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
-    },
+      setIsImportModalOpen(false);
+    }
   });
 
   const filteredLeads = React.useMemo(() => {
@@ -353,9 +355,12 @@ const Leads = () => {
       
       const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
       
-      return matchesSearch && matchesStatus;
+      const isUnassigned = !lead.assignedToName || lead.assignedToName === 'Unassigned';
+      const matchesAssignment = assignmentFilter === 'All' || (assignmentFilter === 'Unassigned' && isUnassigned);
+      
+      return matchesSearch && matchesStatus && matchesAssignment;
     });
-  }, [leads, searchQuery, statusFilter]);
+  }, [leads, searchQuery, statusFilter, assignmentFilter]);
 
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const paginatedLeads = React.useMemo(() => {
@@ -417,9 +422,26 @@ const Leads = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Lead Management</h1>
-          <p className="text-slate-500 text-sm mt-1">Track and manage your sales pipeline efficiently.</p>
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl w-fit">
+          {[
+            { id: 'All', label: 'All Leads' },
+            { id: 'Unassigned', label: 'Unassigned' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setAssignmentFilter(tab.id);
+                setCurrentPage(1);
+              }}
+              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+                assignmentFilter === tab.id 
+                  ? 'bg-white text-primary shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -518,7 +540,7 @@ const Leads = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                       {lead.assignedTo === 'Unassigned' ? (
+                       {(!lead.assignedToName || lead.assignedToName === 'Unassigned') ? (
                          <p className="flex items-center gap-1.5 px-3 py-1 bg-gray/10 text-primary rounded-lg text-xs font-bold transition-all">
 
                           Assign
@@ -526,7 +548,7 @@ const Leads = () => {
                        ) : (
                          <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
                            <div className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white shadow-sm" />
-                           {lead.assignedTo}
+                           {lead.assignedToName}
                          </div>
                        )}
                     </div>

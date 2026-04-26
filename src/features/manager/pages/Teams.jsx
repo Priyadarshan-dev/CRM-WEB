@@ -22,13 +22,14 @@ import {
   UserCheck
 } from 'lucide-react';
 import { 
-  fetchTeamHierarchyMock, 
-  createUserMock, 
-  fetchManagersShortMock, 
-  fetchLeadsMock, 
-  fetchUsersByRoleMock, 
-  updateLeadAssignmentMock
-} from '../../../core/services/mockApi';
+  fetchTeamHierarchy, 
+  createManager, 
+  createExecutive, 
+  fetchManagersShort, 
+  fetchUsersByRole,
+  fetchMyExecutives
+} from '../../../core/services/userService';
+import { fetchLeads, assignLead } from '../../../core/services/leadsService';
 
 
 
@@ -315,45 +316,53 @@ const Teams = () => {
   // Pagination states
   const [currentTeamPage, setCurrentTeamPage] = React.useState(1);
   const [currentAssignPage, setCurrentAssignPage] = React.useState(1);
+  const [selectedExecutiveLeads, setSelectedExecutiveLeads] = React.useState(null);
   const itemsPerPage = 10;
+
+  const userRole = user?.role?.toUpperCase();
+  const isManager = userRole === 'MANAGER';
 
   const { data: teamsData, isLoading, refetch } = useQuery({
     queryKey: ['teams', user?.id],
-    queryFn: () => fetchTeamHierarchyMock(user),
-    enabled: !!user,
+    queryFn: async () => {
+      if (isManager) {
+        const myExecs = await fetchMyExecutives();
+        return [{
+          manager: user.name,
+          isOwnerTeam: true,
+          members: myExecs
+        }];
+      }
+      return fetchTeamHierarchy();
+    },
+    enabled: !!user
   });
 
   // Fetch managers for the dropdown (Admin only)
   const { data: managers } = useQuery({
     queryKey: ['managers-list'],
-    queryFn: fetchManagersShortMock,
-    enabled: user?.role?.toUpperCase() === 'ADMIN' && isModalOpen,
+    queryFn: fetchManagersShort,
+    enabled: userRole === 'ADMIN' && isModalOpen,
   });
 
   // Fetch leads for assignment (Manager only)
   const { data: allLeads } = useQuery({
-    queryKey: ['leads', user?.id],
-    queryFn: () => fetchLeadsMock(user),
-    enabled: !!user && user.role?.toUpperCase() === 'MANAGER',
+    queryKey: ['leads'],
+    queryFn: fetchLeads,
+    enabled: isManager,
   });
 
-  // Fetch executives for assignment dropdown (Manager only)
-  const { data: allExecutives } = useQuery({
-    queryKey: ['executives'],
-    queryFn: () => fetchUsersByRoleMock('EXECUTIVE'),
-    enabled: !!user && user.role?.toUpperCase() === 'MANAGER',
-  });
-
-  // Filter executives belonging to this manager
+  // My executives for assignment tab
   const myExecutives = React.useMemo(() => {
-    if (!allExecutives || !user) return [];
-    return allExecutives.filter(e => e.managerId === user.id);
-  }, [allExecutives, user]);
+    if (isManager) return teamsData?.[0]?.members || [];
+    return [];
+  }, [teamsData, isManager]);
 
-  // Unassigned leads
+  // Unassigned leads (leads that don't have an executive assigned yet)
   const leadsToAssign = React.useMemo(() => {
     if (!allLeads) return [];
-    return allLeads.filter(lead => lead.assignedTo === 'Unassigned');
+    // A lead is "To Assign" for a manager if it has no executiveId
+    return allLeads.filter(lead => !lead.executiveId);
   }, [allLeads]);
 
   const totalAssignPages = Math.ceil(leadsToAssign.length / itemsPerPage);
@@ -363,7 +372,7 @@ const Teams = () => {
   }, [leadsToAssign, currentAssignPage]);
 
   const assignMutation = useMutation({
-    mutationFn: ({ leadId, executiveId }) => updateLeadAssignmentMock(leadId, executiveId),
+    mutationFn: ({ leadId, executiveId }) => assignLead(leadId, executiveId),
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       queryClient.invalidateQueries(['all-leads']);
@@ -391,14 +400,24 @@ const Teams = () => {
           ? (selectedManagerId === 'direct' ? null : parseInt(selectedManagerId)) 
           : null);
     
-    await createUserMock({
-      name: newName,
-      email: newEmail,
-      role: newUserRole,
-      password: newPassword,
-      managerId: managerId,
-      teamId: user.role?.toUpperCase() === 'ADMIN' && newUserRole === 'MANAGER' ? 'NEW' : user.teamId
-    });
+    if (userRole === 'MANAGER' || newUserRole === 'EXECUTIVE') {
+      const execData = {
+        name: newName,
+        email: newEmail,
+        role: 'EXECUTIVE',
+        password: newPassword,
+        managerId: managerId
+      };
+      await createExecutive(execData);
+    } else {
+      const managerData = {
+        name: newName,
+        email: newEmail,
+        role: 'MANAGER',
+        password: newPassword
+      };
+      await createManager(managerData);
+    }
 
     setIsCreating(false);
     setIsModalOpen(false);
@@ -416,9 +435,6 @@ const Teams = () => {
       </div>
     );
   }
-
-  const userRole = user?.role?.toUpperCase();
-  const isManager = userRole === 'MANAGER';
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -555,15 +571,21 @@ const Teams = () => {
 
                     {/* Lead Count */}
                     <div className="col-span-2 flex justify-center">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                        <Target className="w-3 h-3" />
-                        {member.leads}
-                      </span>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedExecutiveLeads(member);
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 hover:bg-primary/10 hover:text-primary transition-all group/badge"
+                      >
+                        <Target className="w-3 h-3 group-hover/badge:scale-110 transition-transform" />
+                        {member.leadsCount || 0}
+                      </button>
                     </div>
 
                     {/* Status Dot + Arrow */}
                     <div className="col-span-1 flex items-center justify-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-400 ring-2 ring-green-100 flex-shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-green-400 ring-2 ring-green-100 flex-shrink-0 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                     </div>
                   </div>
@@ -788,6 +810,69 @@ const Teams = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ── Leads Preview Modal ── */}
+      {selectedExecutiveLeads && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl p-8 space-y-6 max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-5 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xl">
+                  {selectedExecutiveLeads.name.charAt(0)}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">{selectedExecutiveLeads.name}'s Active Leads</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Showing all leads currently assigned to this executive.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedExecutiveLeads(null)} 
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              {allLeads?.filter(l => l.executiveId === selectedExecutiveLeads.id).length > 0 ? (
+                <div className="space-y-3">
+                  {allLeads?.filter(l => l.executiveId === selectedExecutiveLeads.id).map(lead => (
+                    <div key={lead.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-md transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-400">
+                          {lead.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{lead.name}</p>
+                          <p className="text-[10px] text-slate-400">{lead.source}</p>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                        {lead.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Target className="w-8 h-8 text-slate-200" />
+                  </div>
+                  <p className="text-slate-500 font-medium">No leads assigned to this executive yet.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex-shrink-0">
+              <button
+                onClick={() => setSelectedExecutiveLeads(null)}
+                className="w-full bg-slate-100 text-slate-600 font-bold py-3 rounded-2xl hover:bg-slate-200 transition-all"
+              >
+                Close Preview
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -21,7 +21,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { fetchLeadsMock, createLeadMock, bulkCreateLeadsMock, updateLeadMock, deleteLeadMock } from '../../../core/services/mockApi';
+import { fetchLeads, createLead, bulkCreateLeads, updateLead, deleteLead } from '../../../core/services/leadsService';
 import { useAuth } from '../../../core/context/AuthContext';
 
 // ─── Import Leads Modal ──────────────────────────────────────────────────────
@@ -299,13 +299,12 @@ const Leads = () => {
   }, []);
 
   const { data: leads, isLoading } = useQuery({
-    queryKey: ['leads', user?.id],
-    queryFn: () => fetchLeadsMock(user),
-    enabled: !!user,
+    queryKey: ['leads'],
+    queryFn: fetchLeads,
   });
 
   const createMutation = useMutation({
-    mutationFn: createLeadMock,
+    mutationFn: createLead,
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       setIsModalOpen(false);
@@ -315,7 +314,7 @@ const Leads = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => updateLeadMock(id, data),
+    mutationFn: ({ id, data }) => updateLead(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       setIsModalOpen(false);
@@ -325,7 +324,7 @@ const Leads = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteLeadMock,
+    mutationFn: deleteLead,
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
       setActiveMenuLeadId(null);
@@ -333,10 +332,11 @@ const Leads = () => {
   });
 
   const bulkImportMutation = useMutation({
-    mutationFn: bulkCreateLeadsMock,
+    mutationFn: bulkCreateLeads,
     onSuccess: () => {
       queryClient.invalidateQueries(['leads']);
-    },
+      setIsImportModalOpen(false);
+    }
   });
 
   const filteredLeads = React.useMemo(() => {
@@ -513,15 +513,16 @@ const Leads = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      {lead.assignedTo === 'Unassigned' ? (
-                        <p className="flex items-center gap-1.5 px-3 py-1 bg-gray/10 text-primary rounded-lg text-xs font-bold transition-all">
-
-                          Assign
+                      {!lead.executiveId ? (
+                        <p className="flex items-center gap-1.5 px-3 py-1 bg-primary/5 text-primary rounded-lg text-[10px] font-bold transition-all uppercase tracking-wider">
+                          Assign Now
                         </p>
                       ) : (
                         <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-                          <div className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white shadow-sm" />
-                          {lead.assignedTo}
+                          <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                            {lead.assignedToName?.charAt(0)}
+                          </div>
+                          {lead.assignedToName}
                         </div>
                       )}
                     </div>

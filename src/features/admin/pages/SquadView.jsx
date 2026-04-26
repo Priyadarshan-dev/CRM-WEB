@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Users
 } from 'lucide-react';
-import { fetchSquadMembersMock, fetchUserByIdMock } from '../../../core/services/mockApi';
+import { fetchSquadMembers } from '../../../core/services/userService';
+import api from '../../../core/services/api';
 
 const SquadView = () => {
   const { managerId } = useParams();
@@ -18,12 +19,15 @@ const SquadView = () => {
 
   const { data: manager, isLoading: loadingManager } = useQuery({
     queryKey: ['user', managerId],
-    queryFn: () => fetchUserByIdMock(managerId),
+    queryFn: async () => {
+      const res = await api.get(`/users/${managerId}`);
+      return res.data;
+    },
   });
 
   const { data: squad, isLoading: loadingSquad } = useQuery({
     queryKey: ['squad', managerId],
-    queryFn: () => fetchSquadMembersMock(managerId),
+    queryFn: () => fetchSquadMembers(managerId),
   });
 
   if (loadingManager || loadingSquad) {

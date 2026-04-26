@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginMock } from '../services/mockApi';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
@@ -9,24 +9,37 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const userData = await loginMock(email, password);
+      const response = await api.post('/auth/login', { email, password });
+      const { token, refreshToken, user: userData } = response.data;
+      
       setUser(userData);
+      localStorage.setItem('token', token);
+      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('crm_user', JSON.stringify(userData));
+      
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      return { success: false, error: message };
     }
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('crm_user');
   };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('crm_user');
-    if (savedUser) {
+    const token = localStorage.getItem('token');
+    if (savedUser && token) {
       setUser(JSON.parse(savedUser));
+    } else {
+      // Clear inconsistent state
+      localStorage.removeItem('token');
+      localStorage.removeItem('crm_user');
     }
     setLoading(false);
   }, []);

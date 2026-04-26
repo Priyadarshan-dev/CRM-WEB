@@ -1,32 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { CheckCircle2, Bell, UserPlus, Target, AlertTriangle, X } from 'lucide-react';
 import { useAuth } from './AuthContext';
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-const NOTIF_KEY = 'crm_mock_notifications';
-
-export const getMockNotifications = () => {
-  try {
-    const saved = localStorage.getItem(NOTIF_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch { return []; }
-};
-
-export const saveMockNotifications = (notifications) => {
-  localStorage.setItem(NOTIF_KEY, JSON.stringify(notifications));
-};
-
-export const pushNotification = (notification) => {
-  const existing = getMockNotifications();
-  const newNotif = {
-    id: Date.now() + Math.random(),
-    read: false,
-    timestamp: Date.now(),
-    ...notification,
-  };
-  saveMockNotifications([newNotif, ...existing]);
-  return newNotif;
-};
+import { fetchNotifications, markAsRead as apiMarkAsRead, markAllAsRead as apiMarkAllRead } from '../services/notificationService';
 
 // ─── Icon Map ─────────────────────────────────────────────────────────────────
 const ICON_MAP = {
@@ -75,43 +50,57 @@ export const NotificationProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const seenIdsRef = useRef(new Set());
 
-  // Poll localStorage every 3 seconds for new notifications
-  useEffect(() => {
+  const loadNotifications = useCallback(async () => {
     if (!user) return;
-
-    const checkNotifications = () => {
-      const all = getMockNotifications();
-      const mine = all.filter(n => n.recipientId === user.id);
-      setNotifications(mine);
+    try {
+      const data = await fetchNotifications();
+      setNotifications(data);
 
       // Show toast for newly seen unread notifications
-      const newUnread = mine.filter(
+      const newUnread = data.filter(
         n => !n.read && !seenIdsRef.current.has(n.id)
       );
-      newUnread.forEach(n => {
-        seenIdsRef.current.add(n.id);
-        setToasts(prev => [...prev, n]);
-      });
-    };
-
-    checkNotifications();
-    const interval = setInterval(checkNotifications, 3000);
-    return () => clearInterval(interval);
+      
+      if (newUnread.length > 0) {
+        newUnread.forEach(n => {
+          seenIdsRef.current.add(n.id);
+          setToasts(prev => [...prev, n]);
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
   }, [user]);
 
-  const markAsRead = useCallback((notifId) => {
-    const all = getMockNotifications();
-    const updated = all.map(n => n.id === notifId ? { ...n, read: true } : n);
-    saveMockNotifications(updated);
-    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      seenIdsRef.current.clear();
+      return;
+    }
+
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 5000); 
+    return () => clearInterval(interval);
+  }, [user, loadNotifications]);
+
+  const markAsRead = useCallback(async (notifId) => {
+    try {
+      await apiMarkAsRead(notifId);
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
   }, []);
 
-  const markAllRead = useCallback(() => {
+  const markAllRead = useCallback(async () => {
     if (!user) return;
-    const all = getMockNotifications();
-    const updated = all.map(n => n.recipientId === user.id ? { ...n, read: true } : n);
-    saveMockNotifications(updated);
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      await apiMarkAllRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
   }, [user]);
 
   const dismissToast = useCallback((id) => {

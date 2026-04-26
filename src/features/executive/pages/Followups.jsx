@@ -12,7 +12,7 @@ import {
   TrendingUp,
   Star
 } from 'lucide-react';
-import { fetchLeadsMock } from '../../../core/services/mockApi';
+import { fetchLeads } from '../../../core/services/leadsService';
 import { useAuth } from '../../../core/context/AuthContext';
 
 const getStatusColor = (status) => {
@@ -100,9 +100,9 @@ const Followups = () => {
   
   const { data: myLeads, isLoading } = useQuery({
     queryKey: ['leads', 'followups', user?.id],
-    queryFn: () => fetchLeadsMock(user),
+    queryFn: fetchLeads,
     enabled: !!user,
-    refetchInterval: 5000, 
+    refetchInterval: 10000, 
   });
 
   if (isLoading) {
