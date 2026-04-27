@@ -531,7 +531,7 @@ const Teams = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className={`font-bold ${team.isOwnerTeam ? 'text-primary' : 'text-slate-800'}`}>
-                    {team.isOwnerTeam ? "Owner's Direct Team" : `${team.manager}'s Team`}
+                    {team.isOwnerTeam ? " Direct Team" : `${team.manager}'s Team`}
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">{team.members.length} active member{team.members.length !== 1 ? 's' : ''}</p>
                 </div>

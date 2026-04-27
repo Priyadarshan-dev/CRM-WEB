@@ -569,7 +569,7 @@ const Leads = () => {
                        {(!lead.assignedToName || lead.assignedToName === 'Unassigned') ? (
                          <p className="flex items-center gap-1.5 px-3 py-1 bg-gray/10 text-primary rounded-lg text-xs font-bold transition-all">
 
-                          Assign
+                          Unassign
                         </p>
                        ) : (
                          <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">

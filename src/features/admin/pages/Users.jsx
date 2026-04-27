@@ -395,7 +395,6 @@ const Users = () => {
                       onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
                       className="w-full pl-11 pr-10 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none bg-slate-50/30 text-sm font-medium"
                     >
-                      <option value="direct">Direct Report (Super Admin)</option>
                       {managersList?.map(m => (
                         <option key={m.id} value={m.id}>{m.name}</option>
                       ))}
