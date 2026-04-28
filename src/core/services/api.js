@@ -27,8 +27,34 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Here you could implement refresh token logic
+      originalRequest._retry = true;
+      
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          // Use axios directly to avoid interceptor loops
+          const res = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken });
+          
+          if (res.data.token) {
+            localStorage.setItem('token', res.data.token);
+            if (res.data.refreshToken) {
+              localStorage.setItem('refreshToken', res.data.refreshToken);
+            }
+            
+            // Retry original request with new token
+            originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
+            return api(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        // Refresh token failed or is expired
+        console.error('Refresh token failed:', refreshError);
+      }
+
+      // If we reach here, refresh failed or no refresh token exists
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('crm_user');
       localStorage.removeItem('user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
