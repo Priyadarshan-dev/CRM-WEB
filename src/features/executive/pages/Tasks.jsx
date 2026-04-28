@@ -97,6 +97,7 @@ const TaskCard = ({ lead }) => {
 const Tasks = () => {
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
   
   const { data, isLoading } = useQuery({
     queryKey: ['leads', 'tasks', user?.id, currentPage],
