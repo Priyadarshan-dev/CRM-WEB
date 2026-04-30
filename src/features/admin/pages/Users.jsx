@@ -420,11 +420,14 @@ const Users = () => {
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Work Email</label>
                 <input
                   required
+                  disabled={isEditing}
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   autoComplete="new-password"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                  className={`w-full px-4 py-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm ${
+                    isEditing ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : ''
+                  }`}
                   placeholder="john@crm.com"
                 />
               </div>
@@ -433,7 +436,7 @@ const Users = () => {
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Secret Password</label>
                 <div className="relative">
                   <input
-                    required
+                    required={!isEditing}
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}

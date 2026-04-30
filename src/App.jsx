@@ -94,7 +94,10 @@ const Login = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
       <div className="w-full max-w-md space-y-8 bg-white p-10 rounded-3xl border border-slate-200 shadow-xl">
-        <div className="text-center">
+         <div className="text-center">
+          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent italic">LeadCRM</h1>
+        </div>
+        {/* <div className="text-center">
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent italic">LeadCRM</h1>
           <p className="mt-2 text-slate-500 font-medium text-sm">
             {!selectedRole ? 'Select your role to start' : `Sign in as ${selectedRole}`}
@@ -114,7 +117,7 @@ const Login = () => {
               </button>
             ))}
           </div>
-        ) : (
+        ) : ( */}
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             {error && (
               <div className="p-3 text-sm bg-red-50 text-red-600 rounded-xl border border-red-100 font-medium">
@@ -162,18 +165,10 @@ const Login = () => {
               disabled={isSubmitting}
               className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-primary transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
             >
-              {isSubmitting ? 'Verifying...' : `Enter ${selectedRole} Portal`}
-            </button>
-            
-            <button 
-              type="button" 
-              onClick={() => setSelectedRole(null)}
-              className="w-full text-xs font-bold text-slate-400 uppercase hover:text-slate-600 transition-colors"
-            >
-              Go Back
+              {isSubmitting ? 'Verifying...' : "Sign in"}
             </button>
           </form>
-        )}
+        {/* )} */}
 
         <div className="pt-6 border-t border-slate-100 text-center">
           <p className="text-[10px] text-slate-400 font-medium">© 2026 LeadCRM Enterprise. All rights reserved.</p>
